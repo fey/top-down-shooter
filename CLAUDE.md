@@ -103,6 +103,14 @@ Two bullet groups (player vs. enemy) is intentional — keeps collision rules si
 - **Scene keys co-located with scenes.** Each scene file exports its own key constant (`BOOT_SCENE_KEY`, etc.). Import the target scene's key when calling `scene.start()`.
 - **Out of scope for the prototype** (see roadmap): saves/progression, audio, multiple levels, pathfinding, mobile/gamepad controls, sprite animations beyond static Kenney art. Don't add these without explicit scope change.
 
+## Communication Style
+
+When explaining code, architecture, or game mechanics — cover the **why**, not just the what:
+- Explain the reason behind a design decision (e.g. why two bullet groups instead of one).
+- Connect Phaser 3 concepts to concrete game behavior (e.g. what Arcade Physics body means in practice).
+- When touching `config.ts`, mention which gameplay feel the numbers affect.
+- Keep it concise — one paragraph of context beats a bullet list of facts.
+
 <!-- rtk-instructions v2 -->
 # RTK (Rust Token Killer) - Token-Optimized Commands
 
