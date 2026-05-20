@@ -31,13 +31,21 @@ export class GameScene extends Phaser.Scene {
 
     this.enemyGroup = this.physics.add.group();
 
-    this.player = new Player(this, 200, 200);
+    this.player = new Player(this, 200, 200, this.playerBullets);
 
     this.spawnEnemies();
 
     this.physics.add.collider(this.player, this.wallGroup);
     this.physics.add.collider(this.enemyGroup, this.wallGroup);
     this.physics.add.collider(this.enemyGroup, this.enemyGroup);
+
+    this.physics.add.collider(
+      this.playerBullets,
+      this.wallGroup,
+      (bullet) => {
+        (bullet as Phaser.GameObjects.GameObject).destroy();
+      },
+    );
 
     this.physics.add.overlap(
       this.player,
