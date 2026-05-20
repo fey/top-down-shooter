@@ -5,6 +5,7 @@ export const MAP_HEIGHT = 1080;
 
 export const BULLET_SPEED = 600;
 export const BULLET_TTL = 2000;
+export const BULLET_DAMAGE = 1;
 export const PISTOL_COOLDOWN = 250;
 
 export const MELEE_ENEMY_HP = 2;

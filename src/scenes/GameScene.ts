@@ -11,8 +11,8 @@ const WALL_COLOR = 0x555566;
 export class GameScene extends Phaser.Scene {
   private player!: Player;
   private wallGroup!: Phaser.Physics.Arcade.StaticGroup;
-  playerBullets!: Phaser.Physics.Arcade.Group;
-  enemyGroup!: Phaser.Physics.Arcade.Group;
+  private playerBullets!: Phaser.Physics.Arcade.Group;
+  private enemyGroup!: Phaser.Physics.Arcade.Group;
 
   constructor() {
     super("Game");
@@ -74,10 +74,10 @@ export class GameScene extends Phaser.Scene {
   }
 
   override update(): void {
-    this.player.update();
+    if (this.player.active) this.player.update();
 
     for (const enemy of this.enemyGroup.getChildren()) {
-      (enemy as MeleeEnemy).tick(this.player);
+      if (enemy.active) (enemy as Enemy).tick(this.player);
     }
   }
 

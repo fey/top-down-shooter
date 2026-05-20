@@ -1,4 +1,4 @@
-import Phaser from "phaser";
+import type Phaser from "phaser";
 import { PLAYER_HP } from "../config";
 import type { Player } from "../entities/Player";
 
@@ -7,11 +7,7 @@ export class DebugOverlay {
   private player: Player;
   private enemies: Phaser.Physics.Arcade.Group;
 
-  constructor(
-    scene: Phaser.Scene,
-    player: Player,
-    enemies: Phaser.Physics.Arcade.Group,
-  ) {
+  constructor(scene: Phaser.Scene, player: Player, enemies: Phaser.Physics.Arcade.Group) {
     this.player = player;
     this.enemies = enemies;
     this.text = scene.add
@@ -28,6 +24,7 @@ export class DebugOverlay {
   }
 
   private refresh(): void {
+    if (!this.player.active) return;
     const body = this.player.body as Phaser.Physics.Arcade.Body;
     this.text.setText([
       `HP:     ${this.player.hp} / ${PLAYER_HP}`,

@@ -1,17 +1,23 @@
 import Phaser from "phaser";
-import { BULLET_TTL } from "../config";
+import { BULLET_DAMAGE, BULLET_TTL } from "../config";
 
 export class Bullet extends Phaser.Physics.Arcade.Sprite {
-  damage = 1;
+  damage = BULLET_DAMAGE;
+  private ttlTimer: Phaser.Time.TimerEvent;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y, "bullet");
     scene.add.existing(this);
-    scene.time.addEvent({
+    this.ttlTimer = scene.time.addEvent({
       delay: BULLET_TTL,
       callback: () => {
         if (this.active) this.destroy();
       },
     });
+  }
+
+  override destroy(fromScene?: boolean): void {
+    this.ttlTimer?.remove(false);
+    super.destroy(fromScene);
   }
 }
