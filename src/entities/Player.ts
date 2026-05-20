@@ -12,12 +12,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private keys: CursorKeys;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    super(scene, x, y, "__DEFAULT");
+    super(scene, x, y, "player");
     scene.add.existing(this);
-    scene.physics.add.existing(this);
     this.setCollideWorldBounds(true);
     this.setTint(0x00ff88);
-    this.setDisplaySize(32, 32);
 
     const keyboard = scene.input.keyboard;
     if (!keyboard) throw new Error("Keyboard plugin unavailable");
