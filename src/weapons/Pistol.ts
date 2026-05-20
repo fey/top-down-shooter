@@ -16,7 +16,8 @@ export class Pistol extends Weapon {
   ): void {
     const vx = Math.cos(angle) * this.bulletSpeed;
     const vy = Math.sin(angle) * this.bulletSpeed;
-    const bullet = new Bullet(bulletGroup.scene, x, y, vx, vy);
+    const bullet = new Bullet(bulletGroup.scene, x, y);
     bulletGroup.add(bullet);
+    bullet.setVelocity(vx, vy);
   }
 }
