@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { PLAYER_SPEED } from "../config";
+import { PLAYER_SPEED, PLAYER_HP } from "../config";
 
 type CursorKeys = {
   up: Phaser.Input.Keyboard.Key;
@@ -10,6 +10,7 @@ type CursorKeys = {
 
 export class Player extends Phaser.Physics.Arcade.Sprite {
   private keys: CursorKeys;
+  hp: number;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y, "player");
@@ -17,6 +18,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     scene.physics.add.existing(this);
     this.setCollideWorldBounds(true);
     this.setTint(0x00ff88);
+    this.hp = PLAYER_HP;
 
     const keyboard = scene.input.keyboard;
     if (!keyboard) throw new Error("Keyboard plugin unavailable");
@@ -26,6 +28,13 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       left: Phaser.Input.Keyboard.KeyCodes.A,
       right: Phaser.Input.Keyboard.KeyCodes.D,
     }) as CursorKeys;
+  }
+
+  takeDamage(amount: number): void {
+    this.hp -= amount;
+    if (this.hp <= 0) {
+      this.destroy();
+    }
   }
 
   override update(): void {
