@@ -1,8 +1,9 @@
 import Phaser from "phaser";
+import { SceneKeys } from "./SceneKeys";
 
 export class PreloadScene extends Phaser.Scene {
   constructor() {
-    super("Preload");
+    super(SceneKeys.Preload);
   }
 
   create(): void {
@@ -22,6 +23,6 @@ export class PreloadScene extends Phaser.Scene {
 
     gfx.destroy();
 
-    this.scene.start("Game");
+    this.scene.start(SceneKeys.Game);
   }
 }
