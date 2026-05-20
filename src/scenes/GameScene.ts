@@ -39,13 +39,9 @@ export class GameScene extends Phaser.Scene {
     this.physics.add.collider(this.enemyGroup, this.wallGroup);
     this.physics.add.collider(this.enemyGroup, this.enemyGroup);
 
-    this.physics.add.collider(
-      this.playerBullets,
-      this.wallGroup,
-      (bullet) => {
-        (bullet as Phaser.GameObjects.GameObject).destroy();
-      },
-    );
+    this.physics.add.collider(this.playerBullets, this.wallGroup, (bullet) => {
+      (bullet as Phaser.GameObjects.GameObject).destroy();
+    });
 
     this.physics.add.overlap(
       this.player,

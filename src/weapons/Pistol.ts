@@ -1,4 +1,4 @@
-import Phaser from "phaser";
+import type Phaser from "phaser";
 import { BULLET_SPEED, PISTOL_COOLDOWN } from "../config";
 import { Bullet } from "../entities/Bullet";
 import { Weapon } from "./Weapon";

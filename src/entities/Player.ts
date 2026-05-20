@@ -16,12 +16,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private bulletGroup: Phaser.Physics.Arcade.Group;
   hp: number;
 
-  constructor(
-    scene: Phaser.Scene,
-    x: number,
-    y: number,
-    bulletGroup: Phaser.Physics.Arcade.Group,
-  ) {
+  constructor(scene: Phaser.Scene, x: number, y: number, bulletGroup: Phaser.Physics.Arcade.Group) {
     super(scene, x, y, "player");
     scene.add.existing(this);
     scene.physics.add.existing(this);
