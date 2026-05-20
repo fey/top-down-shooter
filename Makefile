@@ -1,4 +1,4 @@
-.PHONY: install dev build preview check format typecheck clean
+.PHONY: install dev build preview check format typecheck clean update-deps
 
 install:
 	npm ci
@@ -23,3 +23,6 @@ typecheck:
 
 clean:
 	rm -rf dist
+
+update-deps:
+	npx ncu -u && npm install
