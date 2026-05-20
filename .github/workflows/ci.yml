@@ -19,16 +19,14 @@ jobs:
           node-version: 20
           cache: npm
 
-      - run: npm ci
+      - name: Install
+        run: make install
 
       - name: Lint & format check
-        run: npx biome check .
-
-      - name: Type check
-        run: npx tsc --noEmit
+        run: make check
 
       - name: Build
-        run: npx vite build
+        run: make build
 
       - uses: actions/upload-pages-artifact@v3
         if: github.ref == 'refs/heads/main'
