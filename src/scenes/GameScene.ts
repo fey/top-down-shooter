@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { MAP_HEIGHT, MAP_WIDTH } from "../config";
+import { DebugOverlay } from "../debug/DebugOverlay";
 import { Bullet } from "../entities/Bullet";
 import type { Enemy } from "../entities/Enemy";
 import { MeleeEnemy } from "../entities/MeleeEnemy";
@@ -68,6 +69,8 @@ export class GameScene extends Phaser.Scene {
 
     this.cameras.main.startFollow(this.player);
     this.cameras.main.setBounds(0, 0, MAP_WIDTH, MAP_HEIGHT);
+
+    new DebugOverlay(this, this.player, this.enemyGroup);
   }
 
   override update(): void {
