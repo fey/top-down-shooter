@@ -1,4 +1,4 @@
-import Phaser from "phaser";
+import type Phaser from "phaser";
 
 export abstract class Weapon {
   protected readonly cooldown: number;

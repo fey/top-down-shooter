@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { PLAYER_SPEED, PLAYER_HP } from "../config";
+import { PLAYER_HP, PLAYER_SPEED } from "../config";
 
 type CursorKeys = {
   up: Phaser.Input.Keyboard.Key;
