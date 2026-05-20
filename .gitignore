@@ -3,3 +3,9 @@
 .dolt/
 *.db
 .beads-credential-key
+
+# Node / Vite
+node_modules/
+dist/
+.vite/
+*.log
