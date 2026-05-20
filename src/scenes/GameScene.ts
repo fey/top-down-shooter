@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { MAP_HEIGHT, MAP_WIDTH } from "../config";
 import { Bullet } from "../entities/Bullet";
+import type { Enemy } from "../entities/Enemy";
 import { MeleeEnemy } from "../entities/MeleeEnemy";
 import { Player } from "../entities/Player";
 
@@ -53,7 +54,7 @@ export class GameScene extends Phaser.Scene {
       this.enemyGroup,
       (bulletObj, enemyObj) => {
         const bullet = bulletObj as Bullet;
-        const enemy = enemyObj as MeleeEnemy;
+        const enemy = enemyObj as Enemy;
         bullet.destroy();
         enemy.takeDamage(bullet.damage);
       },
