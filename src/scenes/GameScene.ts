@@ -1,5 +1,7 @@
 import Phaser from "phaser";
 import { MAP_HEIGHT, MAP_WIDTH } from "../config";
+import { Bullet } from "../entities/Bullet";
+import { MeleeEnemy } from "../entities/MeleeEnemy";
 import { Player } from "../entities/Player";
 
 const WALL_COLOR = 0x555566;
@@ -7,6 +9,8 @@ const WALL_COLOR = 0x555566;
 export class GameScene extends Phaser.Scene {
   private player!: Player;
   private wallGroup!: Phaser.Physics.Arcade.StaticGroup;
+  playerBullets!: Phaser.Physics.Arcade.Group;
+  enemyGroup!: Phaser.Physics.Arcade.Group;
 
   constructor() {
     super("Game");
@@ -19,8 +23,43 @@ export class GameScene extends Phaser.Scene {
     this.wallGroup = this.physics.add.staticGroup();
     this.createWalls();
 
+    this.playerBullets = this.physics.add.group({
+      classType: Bullet,
+      runChildUpdate: true,
+    });
+
+    this.enemyGroup = this.physics.add.group();
+
     this.player = new Player(this, 200, 200);
+
+    this.spawnEnemies();
+
     this.physics.add.collider(this.player, this.wallGroup);
+    this.physics.add.collider(this.enemyGroup, this.wallGroup);
+    this.physics.add.collider(this.enemyGroup, this.enemyGroup);
+
+    this.physics.add.overlap(
+      this.player,
+      this.enemyGroup,
+      (_playerObj, enemyObj) => {
+        (enemyObj as MeleeEnemy).tryAttack(this.player);
+      },
+      undefined,
+      this,
+    );
+
+    this.physics.add.overlap(
+      this.playerBullets,
+      this.enemyGroup,
+      (bulletObj, enemyObj) => {
+        const bullet = bulletObj as Bullet;
+        const enemy = enemyObj as MeleeEnemy;
+        bullet.destroy();
+        enemy.takeDamage(bullet.damage);
+      },
+      undefined,
+      this,
+    );
 
     this.cameras.main.startFollow(this.player);
     this.cameras.main.setBounds(0, 0, MAP_WIDTH, MAP_HEIGHT);
@@ -28,6 +67,22 @@ export class GameScene extends Phaser.Scene {
 
   override update(): void {
     this.player.update();
+
+    for (const enemy of this.enemyGroup.getChildren()) {
+      (enemy as MeleeEnemy).tick(this.player);
+    }
+  }
+
+  private spawnEnemies(): void {
+    const spawns: Array<[number, number]> = [
+      [600, 300],
+      [1000, 500],
+      [800, 800],
+      [1400, 600],
+    ];
+    for (const [x, y] of spawns) {
+      this.enemyGroup.add(new MeleeEnemy(this, x, y));
+    }
   }
 
   private createWalls(): void {
