@@ -1,12 +1,14 @@
 import Phaser from "phaser";
-import { SceneKeys } from "./SceneKeys";
+import { PRELOAD_SCENE_KEY } from "./PreloadScene";
+
+export const BOOT_SCENE_KEY = "Boot";
 
 export class BootScene extends Phaser.Scene {
   constructor() {
-    super(SceneKeys.Boot);
+    super(BOOT_SCENE_KEY);
   }
 
   create(): void {
-    this.scene.start(SceneKeys.Preload);
+    this.scene.start(PRELOAD_SCENE_KEY);
   }
 }

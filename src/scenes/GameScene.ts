@@ -7,9 +7,9 @@ import { MeleeEnemy } from "../entities/MeleeEnemy";
 import { Player } from "../entities/Player";
 import type { LevelData } from "../level/level1";
 import { level1 } from "../level/level1";
-import { SceneKeys } from "./SceneKeys";
-
 const WALL_COLOR = 0x555566;
+
+export const GAME_SCENE_KEY = "Game";
 
 export class GameScene extends Phaser.Scene {
   private player!: Player;
@@ -18,7 +18,7 @@ export class GameScene extends Phaser.Scene {
   private enemyGroup!: Phaser.Physics.Arcade.Group;
 
   constructor() {
-    super(SceneKeys.Game);
+    super(GAME_SCENE_KEY);
   }
 
   create(): void {

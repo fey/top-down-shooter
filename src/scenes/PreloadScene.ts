@@ -1,9 +1,11 @@
 import Phaser from "phaser";
-import { SceneKeys } from "./SceneKeys";
+import { GAME_SCENE_KEY } from "./GameScene";
+
+export const PRELOAD_SCENE_KEY = "Preload";
 
 export class PreloadScene extends Phaser.Scene {
   constructor() {
-    super(SceneKeys.Preload);
+    super(PRELOAD_SCENE_KEY);
   }
 
   create(): void {
@@ -23,6 +25,6 @@ export class PreloadScene extends Phaser.Scene {
 
     gfx.destroy();
 
-    this.scene.start(SceneKeys.Game);
+    this.scene.start(GAME_SCENE_KEY);
   }
 }
