@@ -3,44 +3,6 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 AGENTS.md is a symlink to this file — they are the same document.
 
-## Agent Instructions
-
-This project uses **bd** (beads) for issue tracking. Run `bd prime` for full workflow context.
-
-> **Architecture in one line:** Issues live in a local Dolt database
-> (`.beads/dolt/`); cross-machine sync uses `bd dolt push/pull` (a
-> git-compatible protocol), stored under `refs/dolt/data` on your git
-> remote — separate from `refs/heads/*` where your code lives.
-> `.beads/issues.jsonl` is a passive export, not the wire protocol.
->
-> See [SYNC_CONCEPTS.md](https://github.com/gastownhall/beads/blob/main/docs/SYNC_CONCEPTS.md)
-> for the one-screen overview and anti-patterns (don't treat JSONL as the
-> source of truth; don't `bd import` during normal operation; don't
-> reach for third-party Dolt hosting before trying the default).
-
-## Non-Interactive Shell Commands
-
-**ALWAYS use non-interactive flags** with file operations to avoid hanging on confirmation prompts.
-
-Shell commands like `cp`, `mv`, and `rm` may be aliased to include `-i` (interactive) mode on some systems, causing the agent to hang indefinitely waiting for y/n input.
-
-**Use these forms instead:**
-```bash
-# Force overwrite without prompting
-cp -f source dest           # NOT: cp source dest
-mv -f source dest           # NOT: mv source dest
-rm -f file                  # NOT: rm file
-
-# For recursive operations
-rm -rf directory            # NOT: rm -r directory
-cp -rf source dest          # NOT: cp -r source dest
-```
-
-**Other commands that may prompt:**
-- `scp` - use `-o BatchMode=yes` for non-interactive
-- `ssh` - use `-o BatchMode=yes` to fail instead of prompting
-- `apt-get` - use `-y` flag
-- `brew` - use `HOMEBREW_NO_AUTO_UPDATE=1` env var
 
 <!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:7510c1e2 -->
 ## Beads Issue Tracker
@@ -91,43 +53,41 @@ bd close <id>         # Complete work
 <!-- END BEADS INTEGRATION -->
 
 
-## Project Status
+## Project Overview
 
-Early-stage prototype, **pre-code**: only `docs/roadmap.md` exists so far. That file is the source of truth for scope, stack, structure, and milestone breakdown — read it before touching anything.
-
-Goal: small browser top-down shooter (one static map, two weapons, two enemy types) built incrementally through milestones M1–M9 defined in the roadmap.
+Small browser top-down shooter: one static map, two weapons, two enemy types.
+Built milestone-by-milestone (M1–M9) as defined in `docs/roadmap.md` — read it before touching anything.
 
 ## Stack
 
 - **Phaser 3** (2D game engine).
 - **TypeScript** in strict mode.
-- **Vite** for dev server and bundling (`npm run dev` / `npm run build`).
+- **Vite** for dev server and bundling.
 - **Biome** for lint + format (replaces ESLint + Prettier) — single `biome.json`.
-
-None of these are installed yet; M1 sets them up.
 
 ## Build & Test
 
-Once M1 is implemented, the standard scripts will be:
-
 ```bash
-npm install
-npm run dev         # Vite dev server
-npm run build       # production build
-npm run check       # Biome lint + format check
-npm run typecheck   # tsc --noEmit
+make install    # npm ci
+make dev        # Vite dev server
+make build      # tsc + vite build
+make preview    # vite preview
+make check      # Biome lint + format check
+make format     # Biome format --write
+make typecheck  # tsc --noEmit
+make clean      # rm -rf dist
 ```
 
-There are no automated tests planned — verification is manual per milestone (open the dev server, exercise the new behavior). Each milestone in `docs/roadmap.md` has its own **Verify** checklist.
+No automated tests — verification is manual (open dev server, exercise the behavior). Each milestone in `docs/roadmap.md` has its own **Verify** checklist.
 
 ## Architecture Overview
 
-Planned (see `docs/roadmap.md` for full details). The big-picture shape:
+The big-picture shape (see `docs/roadmap.md` for full details):
 
 - **Scenes** (`src/scenes/`) are the Phaser top-level state machine: `Boot → Preload → MainMenu → Game → GameOver`, with `HUDScene` running as an overlay on top of `Game`. The HUD communicates with `GameScene` only through `scene.events.emit(...)` events (`hpChanged`, `ammoChanged`, etc.) — do not reach into `GameScene` directly from the HUD.
 - **GameScene** is the integration hub: it owns the player, enemy groups, wall (static physics) group, pickups, and two bullet groups (player bullets vs. enemy bullets). All collision wiring lives here.
 - **Entities** (`src/entities/`) are thin Phaser sprite subclasses with an Arcade Physics body. Each owns its own AI/behavior tick. Enemies share a base `Enemy` class; concrete subtypes (`MeleeEnemy`, `ShooterEnemy`) differ only in their AI.
-- **Weapons** (`src/weapons/`) are separate from entities: a weapon has `tryFire(bulletGroup, x, y, angle, now)` and encapsulates cooldown, ammo, and bullet spawning. The player delegates firing to its currently equipped `Weapon`. New weapons = new `Weapon` subclass, no changes elsewhere.
+- **Weapons** (`src/weapons/`) are separate from entities: each weapon encapsulates cooldown, ammo, and bullet spawning. The player delegates firing to its currently equipped `Weapon`. New weapons = new `Weapon` subclass, no changes elsewhere.
 - **Level data** (`src/level/level1.ts`) is plain data — arrays of walls, enemy spawns, pickups, and a start position. `GameScene` reads this on init. To change the level, edit data, not code.
 - **Tuning numbers** (HP, speed, damage, cooldowns, ranges) live in `src/config.ts`. When balancing feels off, this is the only file you should be editing.
 
