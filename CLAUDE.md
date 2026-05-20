@@ -1,6 +1,8 @@
-# Project Instructions for AI Agents
+# CLAUDE.md
 
-This file provides instructions and context for AI coding agents working on this project.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+This file also serves as the project instructions for any AI coding agent working on this repository.
 
 <!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:7510c1e2 -->
 ## Beads Issue Tracker
@@ -51,20 +53,53 @@ bd close <id>         # Complete work
 <!-- END BEADS INTEGRATION -->
 
 
+## Project Status
+
+Early-stage prototype, **pre-code**: only `docs/roadmap.md` exists so far. That file is the source of truth for scope, stack, structure, and milestone breakdown — read it before touching anything.
+
+Goal: small browser top-down shooter (one static map, two weapons, two enemy types) built incrementally through milestones M1–M9 defined in the roadmap.
+
+## Stack
+
+- **Phaser 3** (2D game engine).
+- **TypeScript** in strict mode.
+- **Vite** for dev server and bundling (`npm run dev` / `npm run build`).
+- **Biome** for lint + format (replaces ESLint + Prettier) — single `biome.json`.
+
+None of these are installed yet; M1 sets them up.
+
 ## Build & Test
 
-_Add your build and test commands here_
+Once M1 is implemented, the standard scripts will be:
 
 ```bash
-# Example:
-# npm install
-# npm test
+npm install
+npm run dev         # Vite dev server
+npm run build       # production build
+npm run check       # Biome lint + format check
+npm run typecheck   # tsc --noEmit
 ```
+
+There are no automated tests planned — verification is manual per milestone (open the dev server, exercise the new behavior). Each milestone in `docs/roadmap.md` has its own **Verify** checklist.
 
 ## Architecture Overview
 
-_Add a brief overview of your project architecture_
+Planned (see `docs/roadmap.md` for full details). The big-picture shape:
+
+- **Scenes** (`src/scenes/`) are the Phaser top-level state machine: `Boot → Preload → MainMenu → Game → GameOver`, with `HUDScene` running as an overlay on top of `Game`. The HUD communicates with `GameScene` only through `scene.events.emit(...)` events (`hpChanged`, `ammoChanged`, etc.) — do not reach into `GameScene` directly from the HUD.
+- **GameScene** is the integration hub: it owns the player, enemy groups, wall (static physics) group, pickups, and two bullet groups (player bullets vs. enemy bullets). All collision wiring lives here.
+- **Entities** (`src/entities/`) are thin Phaser sprite subclasses with an Arcade Physics body. Each owns its own AI/behavior tick. Enemies share a base `Enemy` class; concrete subtypes (`MeleeEnemy`, `ShooterEnemy`) differ only in their AI.
+- **Weapons** (`src/weapons/`) are separate from entities: a weapon has `tryFire(scene, owner, targetVec)` and encapsulates cooldown, ammo, and bullet spawning. The player delegates firing to its currently equipped `Weapon`. New weapons = new `Weapon` subclass, no changes elsewhere.
+- **Level data** (`src/level/level1.ts`) is plain data — arrays of walls, enemy spawns, pickups, and a start position. `GameScene` reads this on init. To change the level, edit data, not code.
+- **Tuning numbers** (HP, speed, damage, cooldowns, ranges) live in `src/config.ts`. When balancing feels off, this is the only file you should be editing.
+
+Two bullet groups (player vs. enemy) is intentional — keeps collision rules simple and avoids friendly-fire checks.
 
 ## Conventions & Patterns
 
-_Add your project-specific conventions here_
+- **Work milestone-by-milestone.** Each `Mx` in `docs/roadmap.md` is a separate commit/PR and must leave the game runnable and verifiable in the browser. Do not stack changes across milestones in one commit.
+- **Strict TypeScript.** No `any`, no `// @ts-ignore` without a comment explaining why.
+- **Biome is the only linter/formatter.** Don't add ESLint or Prettier; don't fight Biome's defaults.
+- **Numbers in `config.ts`, data in `level1.ts`.** Don't hardcode tuning constants or level layout inside scenes or entities.
+- **Scene communication via events.** HUD and other overlay scenes subscribe to `scene.events` from `GameScene`; don't grab the other scene's instance.
+- **Out of scope for the prototype** (see roadmap): saves/progression, audio, multiple levels, pathfinding, mobile/gamepad controls, sprite animations beyond static Kenney art. Don't add these without explicit scope change.
