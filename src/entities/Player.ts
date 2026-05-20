@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { PLAYER_SPEED } from "../config";
+import { PLAYER_HP, PLAYER_SPEED } from "../config";
 
 type CursorKeys = {
   up: Phaser.Input.Keyboard.Key;
@@ -9,6 +9,7 @@ type CursorKeys = {
 };
 
 export class Player extends Phaser.Physics.Arcade.Sprite {
+  hp: number = PLAYER_HP;
   private keys: CursorKeys;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
@@ -26,6 +27,14 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       left: Phaser.Input.Keyboard.KeyCodes.A,
       right: Phaser.Input.Keyboard.KeyCodes.D,
     }) as CursorKeys;
+  }
+
+  takeDamage(amount: number): void {
+    this.hp -= amount;
+    if (this.hp <= 0) {
+      this.hp = 0;
+      console.log("Player died");
+    }
   }
 
   override update(): void {
