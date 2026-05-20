@@ -1,5 +1,7 @@
 import Phaser from "phaser";
 import { PLAYER_HP, PLAYER_SPEED } from "../config";
+import { Pistol } from "../weapons/Pistol";
+import type { Weapon } from "../weapons/Weapon";
 
 type CursorKeys = {
   up: Phaser.Input.Keyboard.Key;
@@ -10,9 +12,16 @@ type CursorKeys = {
 
 export class Player extends Phaser.Physics.Arcade.Sprite {
   private keys: CursorKeys;
+  private weapon: Weapon;
+  private bulletGroup: Phaser.Physics.Arcade.Group;
   hp: number;
 
-  constructor(scene: Phaser.Scene, x: number, y: number) {
+  constructor(
+    scene: Phaser.Scene,
+    x: number,
+    y: number,
+    bulletGroup: Phaser.Physics.Arcade.Group,
+  ) {
     super(scene, x, y, "player");
     scene.add.existing(this);
     scene.physics.add.existing(this);
@@ -28,6 +37,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       left: Phaser.Input.Keyboard.KeyCodes.A,
       right: Phaser.Input.Keyboard.KeyCodes.D,
     }) as CursorKeys;
+
+    this.bulletGroup = bulletGroup;
+    this.weapon = new Pistol();
   }
 
   takeDamage(amount: number): void {
@@ -51,5 +63,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const pointer = this.scene.input.activePointer;
     const angle = Phaser.Math.Angle.Between(this.x, this.y, pointer.worldX, pointer.worldY);
     this.setRotation(angle + Math.PI / 2);
+
+    if (pointer.isDown) {
+      this.weapon.tryFire(this.bulletGroup, this.x, this.y, angle, this.scene.time.now);
+    }
   }
 }
