@@ -72,7 +72,7 @@ export class GameScene extends Phaser.Scene {
       (bullet as Phaser.GameObjects.GameObject).destroy();
     });
 
-    this.physics.add.overlap(this.enemyBullets, this.player, (bulletObj) => {
+    this.physics.add.overlap(this.enemyBullets, this.player, (_playerObj, bulletObj) => {
       const bullet = bulletObj as Bullet;
       const dmg = bullet.damage;
       bullet.destroy();
