@@ -1,8 +1,8 @@
 import Phaser from "phaser";
-import { MAP_HEIGHT, MAP_WIDTH } from "../config";
+import { MAP_HEIGHT, MAP_WIDTH, PACK_ALERT_RADIUS } from "../config";
 import { DebugOverlay } from "../debug/DebugOverlay";
 import { Bullet } from "../entities/Bullet";
-import type { Enemy } from "../entities/Enemy";
+import { type Enemy, EnemyState } from "../entities/Enemy";
 import { MeleeEnemy } from "../entities/MeleeEnemy";
 import { Player } from "../entities/Player";
 import { ShooterEnemy } from "../entities/ShooterEnemy";
@@ -12,6 +12,35 @@ import { GAME_OVER_SCENE_KEY } from "./GameOverScene";
 import { LEVEL_SELECT_SCENE_KEY } from "./LevelSelectScene";
 
 const WALL_COLOR = 0x555566;
+const SLOT_COUNT = 8;
+
+class SlotCoordinator {
+  private readonly takenSlots = new Map<Enemy, number>();
+
+  assignSlot(enemy: Enemy, player: Player): void {
+    const takenIndices = new Set(this.takenSlots.values());
+    const enemyAngle = Phaser.Math.Angle.Between(player.x, player.y, enemy.x, enemy.y);
+
+    let bestSlot = 0;
+    let bestDiff = Infinity;
+    for (let i = 0; i < SLOT_COUNT; i++) {
+      if (takenIndices.has(i)) continue;
+      const slotAngle = i * ((Math.PI * 2) / SLOT_COUNT);
+      const diff = Math.abs(Phaser.Math.Angle.Wrap(enemyAngle - slotAngle));
+      if (diff < bestDiff) {
+        bestDiff = diff;
+        bestSlot = i;
+      }
+    }
+
+    this.takenSlots.set(enemy, bestSlot);
+    enemy.flankAngle = bestSlot * ((Math.PI * 2) / SLOT_COUNT);
+  }
+
+  releaseSlot(enemy: Enemy): void {
+    this.takenSlots.delete(enemy);
+  }
+}
 
 export const GAME_SCENE_KEY = "Game";
 
@@ -21,6 +50,7 @@ export class GameScene extends Phaser.Scene {
   private playerBullets!: Phaser.Physics.Arcade.Group;
   private enemyBullets!: Phaser.Physics.Arcade.Group;
   private enemyGroup!: Phaser.Physics.Arcade.Group;
+  private coordinator!: SlotCoordinator;
   private gameOver = false;
   private hasEnemies = false;
   private levelData: LevelData = level1;
@@ -43,6 +73,7 @@ export class GameScene extends Phaser.Scene {
     this.playerBullets = this.physics.add.group({ classType: Bullet, runChildUpdate: true });
     this.enemyBullets = this.physics.add.group({ classType: Bullet, runChildUpdate: true });
     this.enemyGroup = this.physics.add.group();
+    this.coordinator = new SlotCoordinator();
 
     this.loadLevel(this.levelData);
 
@@ -65,16 +96,6 @@ export class GameScene extends Phaser.Scene {
     });
 
     this.physics.add.overlap(
-      this.player,
-      this.enemyGroup,
-      (_playerObj, enemyObj) => {
-        (enemyObj as MeleeEnemy).tryAttack(this.player);
-      },
-      undefined,
-      this,
-    );
-
-    this.physics.add.overlap(
       this.playerBullets,
       this.enemyGroup,
       (bulletObj, enemyObj) => {
@@ -86,6 +107,27 @@ export class GameScene extends Phaser.Scene {
       undefined,
       this,
     );
+
+    this.events.on("requestSlot", (enemy: Enemy) => {
+      this.coordinator.assignSlot(enemy, this.player);
+    });
+
+    this.events.on("packAlert", (x: number, y: number) => {
+      for (const obj of this.enemyGroup.getChildren()) {
+        const e = obj as Enemy;
+        if (e.state === EnemyState.IDLE) {
+          const d = Phaser.Math.Distance.Between(x, y, e.x, e.y);
+          if (d < PACK_ALERT_RADIUS) {
+            this.coordinator.assignSlot(e, this.player);
+            e.state = EnemyState.CHASE;
+          }
+        }
+      }
+    });
+
+    this.events.on("enemyDied", (e: Enemy) => {
+      this.coordinator.releaseSlot(e);
+    });
 
     this.cameras.main.startFollow(this.player);
     this.cameras.main.setBounds(0, 0, MAP_WIDTH, MAP_HEIGHT);

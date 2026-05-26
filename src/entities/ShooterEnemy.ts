@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import {
+  ENEMY_AGGRO_RANGE,
   SHOOTER_BULLET_SPEED,
   SHOOTER_ENEMY_DAMAGE,
   SHOOTER_ENEMY_FIRE_COOLDOWN,
@@ -8,13 +9,15 @@ import {
   SHOOTER_RANGE,
 } from "../config";
 import { Bullet } from "./Bullet";
-import { Enemy } from "./Enemy";
+import { Enemy, EnemyState } from "./Enemy";
 import type { Player } from "./Player";
 
 export class ShooterEnemy extends Enemy {
   private lastFiredAt = 0;
   private readonly enemyBullets: Phaser.Physics.Arcade.Group;
   private readonly wallGroup: Phaser.Physics.Arcade.StaticGroup;
+  private strafeSign = 1;
+  private strafeFlipTime = 0;
 
   constructor(
     scene: Phaser.Scene,
@@ -25,28 +28,83 @@ export class ShooterEnemy extends Enemy {
   ) {
     super(scene, x, y, "enemy_shooter", SHOOTER_ENEMY_HP);
     this.setTint(0x4444ff);
+    this.baseSpeed = SHOOTER_ENEMY_SPEED;
+    this.flankRadius = SHOOTER_RANGE;
     this.enemyBullets = enemyBullets;
     this.wallGroup = wallGroup;
   }
 
   tick(player: Player): void {
-    const dist = Phaser.Math.Distance.Between(this.x, this.y, player.x, player.y);
-    if (dist > SHOOTER_RANGE) {
-      const angle = Phaser.Math.Angle.Between(this.x, this.y, player.x, player.y);
-      this.setVelocity(
-        Math.cos(angle) * SHOOTER_ENEMY_SPEED,
-        Math.sin(angle) * SHOOTER_ENEMY_SPEED,
-      );
-    } else {
-      this.setVelocity(0, 0);
-    }
+    if (this.checkAndTriggerDodge(player)) return;
 
+    const dist = Phaser.Math.Distance.Between(this.x, this.y, player.x, player.y);
     const now = this.scene.time.now;
-    if (now - this.lastFiredAt >= SHOOTER_ENEMY_FIRE_COOLDOWN && this.hasLoS(player)) {
-      const angle = Phaser.Math.Angle.Between(this.x, this.y, player.x, player.y);
-      this.spawnBullet(angle);
-      this.lastFiredAt = now;
+
+    switch (this.state) {
+      case EnemyState.IDLE:
+        this.setVelocity(0, 0);
+        if (dist < ENEMY_AGGRO_RANGE) {
+          this.scene.events.emit("requestSlot", this);
+          this.state = EnemyState.CHASE;
+          this.scene.events.emit("packAlert", this.x, this.y);
+        }
+        break;
+
+      case EnemyState.CHASE: {
+        const target = this.getSlotPos(player);
+        const angle = Phaser.Math.Angle.Between(this.x, this.y, target.x, target.y);
+        this.setVelocity(
+          Math.cos(angle) * SHOOTER_ENEMY_SPEED,
+          Math.sin(angle) * SHOOTER_ENEMY_SPEED,
+        );
+        if (dist <= SHOOTER_RANGE) {
+          if (this.hasLoS(player)) {
+            this.state = EnemyState.SHOOT;
+          } else {
+            this.enterStrafe(now);
+          }
+        }
+        break;
+      }
+
+      case EnemyState.SHOOT:
+        this.setVelocity(0, 0);
+        if (now - this.lastFiredAt >= SHOOTER_ENEMY_FIRE_COOLDOWN && this.hasLoS(player)) {
+          this.spawnBullet(Phaser.Math.Angle.Between(this.x, this.y, player.x, player.y));
+          this.lastFiredAt = now;
+        }
+        if (!this.hasLoS(player)) this.enterStrafe(now);
+        if (dist > SHOOTER_RANGE) this.state = EnemyState.CHASE;
+        break;
+
+      case EnemyState.STRAFE:
+        this.applyStrafe(player, now);
+        if (this.hasLoS(player)) this.state = EnemyState.SHOOT;
+        if (dist > SHOOTER_RANGE) this.state = EnemyState.CHASE;
+        break;
+
+      default:
+        break;
     }
+  }
+
+  private enterStrafe(now: number): void {
+    this.state = EnemyState.STRAFE;
+    this.strafeSign = Math.random() < 0.5 ? 1 : -1;
+    this.strafeFlipTime = now + 1000;
+  }
+
+  private applyStrafe(player: Player, now: number): void {
+    if (now >= this.strafeFlipTime) {
+      this.strafeSign *= -1;
+      this.strafeFlipTime = now + 1000;
+    }
+    const angleToPlayer = Phaser.Math.Angle.Between(this.x, this.y, player.x, player.y);
+    const perpAngle = angleToPlayer + this.strafeSign * (Math.PI / 2);
+    this.setVelocity(
+      Math.cos(perpAngle) * SHOOTER_ENEMY_SPEED,
+      Math.sin(perpAngle) * SHOOTER_ENEMY_SPEED,
+    );
   }
 
   private hasLoS(player: Player): boolean {
