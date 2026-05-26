@@ -1,5 +1,13 @@
 import Phaser from "phaser";
-import { DODGE_ANGLE_THRESHOLD, DODGE_COOLDOWN, DODGE_DURATION, DODGE_SPEED_MULT } from "../config";
+import type { Pathfinder } from "../ai/Pathfinder";
+import {
+  DODGE_ANGLE_THRESHOLD,
+  DODGE_COOLDOWN,
+  DODGE_DURATION,
+  DODGE_SPEED_MULT,
+  PATH_RECALC_DIST,
+  WAYPOINT_REACH_DIST,
+} from "../config";
 import type { Player } from "./Player";
 
 export enum EnemyState {
@@ -18,16 +26,29 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
   flankAngle = 0;
   flankRadius = 0;
   protected baseSpeed = 0;
+  protected pathfinder: Pathfinder | null = null;
 
   private lastDodgeTime = 0;
   private dodgeEndTime = 0;
   private readonly dodgeVel = new Phaser.Math.Vector2();
+
+  private waypoints: Phaser.Math.Vector2[] = [];
+  private waypointIndex = 0;
+  private readonly lastPathTarget = new Phaser.Math.Vector2(-9999, -9999);
 
   constructor(scene: Phaser.Scene, x: number, y: number, texture: string, hp: number) {
     super(scene, x, y, texture);
     scene.add.existing(this);
     scene.physics.add.existing(this);
     this.hp = hp;
+  }
+
+  setPathfinder(pf: Pathfinder): void {
+    this.pathfinder = pf;
+  }
+
+  getWaypoints(): Phaser.Math.Vector2[] {
+    return this.waypoints;
   }
 
   takeDamage(amount: number): void {
@@ -43,6 +64,47 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
       player.x + Math.cos(this.flankAngle) * this.flankRadius,
       player.y + Math.sin(this.flankAngle) * this.flankRadius,
     );
+  }
+
+  moveAlongPath(target: Phaser.Math.Vector2, speed: number): void {
+    const targetMoved =
+      Phaser.Math.Distance.BetweenPoints(target, this.lastPathTarget) > PATH_RECALC_DIST;
+
+    if (targetMoved || this.waypoints.length === 0) {
+      this.recalcPath(target);
+    }
+
+    if (this.waypoints.length === 0) {
+      // No path found — fall back to direct movement
+      const angle = Phaser.Math.Angle.Between(this.x, this.y, target.x, target.y);
+      this.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
+      return;
+    }
+
+    const wp = this.waypoints[this.waypointIndex];
+    if (wp && Phaser.Math.Distance.Between(this.x, this.y, wp.x, wp.y) < WAYPOINT_REACH_DIST) {
+      this.waypointIndex++;
+      if (this.waypointIndex >= this.waypoints.length) {
+        this.waypoints = [];
+        this.setVelocity(0, 0);
+        return;
+      }
+    }
+
+    const current = this.waypoints[this.waypointIndex];
+    if (!current) return;
+    const angle = Phaser.Math.Angle.Between(this.x, this.y, current.x, current.y);
+    this.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
+  }
+
+  private recalcPath(target: Phaser.Math.Vector2): void {
+    this.lastPathTarget.copy(target);
+    this.waypointIndex = 0;
+    if (this.pathfinder) {
+      this.waypoints = this.pathfinder.findPath(this.x, this.y, target.x, target.y);
+    } else {
+      this.waypoints = [];
+    }
   }
 
   // Returns true while in DODGE — caller skips its own tick logic

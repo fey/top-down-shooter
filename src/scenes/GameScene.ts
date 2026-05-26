@@ -1,4 +1,6 @@
 import Phaser from "phaser";
+import { Pathfinder } from "../ai/Pathfinder";
+import { SlotCoordinator } from "../ai/SlotCoordinator";
 import { MAP_HEIGHT, MAP_WIDTH, PACK_ALERT_RADIUS } from "../config";
 import { DebugOverlay } from "../debug/DebugOverlay";
 import { Bullet } from "../entities/Bullet";
@@ -12,35 +14,6 @@ import { GAME_OVER_SCENE_KEY } from "./GameOverScene";
 import { LEVEL_SELECT_SCENE_KEY } from "./LevelSelectScene";
 
 const WALL_COLOR = 0x555566;
-const SLOT_COUNT = 8;
-
-class SlotCoordinator {
-  private readonly takenSlots = new Map<Enemy, number>();
-
-  assignSlot(enemy: Enemy, player: Player): void {
-    const takenIndices = new Set(this.takenSlots.values());
-    const enemyAngle = Phaser.Math.Angle.Between(player.x, player.y, enemy.x, enemy.y);
-
-    let bestSlot = 0;
-    let bestDiff = Infinity;
-    for (let i = 0; i < SLOT_COUNT; i++) {
-      if (takenIndices.has(i)) continue;
-      const slotAngle = i * ((Math.PI * 2) / SLOT_COUNT);
-      const diff = Math.abs(Phaser.Math.Angle.Wrap(enemyAngle - slotAngle));
-      if (diff < bestDiff) {
-        bestDiff = diff;
-        bestSlot = i;
-      }
-    }
-
-    this.takenSlots.set(enemy, bestSlot);
-    enemy.flankAngle = bestSlot * ((Math.PI * 2) / SLOT_COUNT);
-  }
-
-  releaseSlot(enemy: Enemy): void {
-    this.takenSlots.delete(enemy);
-  }
-}
 
 export const GAME_SCENE_KEY = "Game";
 
@@ -51,6 +24,7 @@ export class GameScene extends Phaser.Scene {
   private enemyBullets!: Phaser.Physics.Arcade.Group;
   private enemyGroup!: Phaser.Physics.Arcade.Group;
   private coordinator!: SlotCoordinator;
+  private pathfinder!: Pathfinder;
   private gameOver = false;
   private hasEnemies = false;
   private levelData: LevelData = level1;
@@ -74,6 +48,7 @@ export class GameScene extends Phaser.Scene {
     this.enemyBullets = this.physics.add.group({ classType: Bullet, runChildUpdate: true });
     this.enemyGroup = this.physics.add.group();
     this.coordinator = new SlotCoordinator();
+    this.pathfinder = new Pathfinder(this.levelData.walls, MAP_WIDTH, MAP_HEIGHT);
 
     this.loadLevel(this.levelData);
 
@@ -169,13 +144,14 @@ export class GameScene extends Phaser.Scene {
     this.player = new Player(this, data.playerStart.x, data.playerStart.y, this.playerBullets);
 
     for (const spawn of data.enemySpawns) {
+      let enemy: MeleeEnemy | ShooterEnemy;
       if (spawn.type === "melee") {
-        this.enemyGroup.add(new MeleeEnemy(this, spawn.x, spawn.y));
-      } else if (spawn.type === "shooter") {
-        this.enemyGroup.add(
-          new ShooterEnemy(this, spawn.x, spawn.y, this.enemyBullets, this.wallGroup),
-        );
+        enemy = new MeleeEnemy(this, spawn.x, spawn.y);
+      } else {
+        enemy = new ShooterEnemy(this, spawn.x, spawn.y, this.enemyBullets, this.wallGroup);
       }
+      enemy.setPathfinder(this.pathfinder);
+      this.enemyGroup.add(enemy);
     }
     this.hasEnemies = data.enemySpawns.length > 0;
   }

@@ -52,11 +52,7 @@ export class ShooterEnemy extends Enemy {
 
       case EnemyState.CHASE: {
         const target = this.getSlotPos(player);
-        const angle = Phaser.Math.Angle.Between(this.x, this.y, target.x, target.y);
-        this.setVelocity(
-          Math.cos(angle) * SHOOTER_ENEMY_SPEED,
-          Math.sin(angle) * SHOOTER_ENEMY_SPEED,
-        );
+        this.moveAlongPath(target, SHOOTER_ENEMY_SPEED);
         if (dist <= SHOOTER_RANGE) {
           if (this.hasLoS(player)) {
             this.state = EnemyState.SHOOT;

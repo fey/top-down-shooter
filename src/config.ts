@@ -28,3 +28,7 @@ export const DODGE_COOLDOWN = 1500;
 export const DODGE_DURATION = 300;
 export const DODGE_ANGLE_THRESHOLD = 0.44;
 export const DODGE_SPEED_MULT = 1.8;
+
+export const PATH_CELL_SIZE = 64;
+export const PATH_RECALC_DIST = 128;
+export const WAYPOINT_REACH_DIST = 24;

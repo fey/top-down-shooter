@@ -38,8 +38,7 @@ export class MeleeEnemy extends Enemy {
 
       case EnemyState.CHASE: {
         const target = this.getSlotPos(player);
-        const angle = Phaser.Math.Angle.Between(this.x, this.y, target.x, target.y);
-        this.setVelocity(Math.cos(angle) * MELEE_ENEMY_SPEED, Math.sin(angle) * MELEE_ENEMY_SPEED);
+        this.moveAlongPath(target, MELEE_ENEMY_SPEED);
         if (dist < MELEE_ATTACK_RANGE) this.state = EnemyState.ATTACK;
         break;
       }
