@@ -14,6 +14,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private keys: CursorKeys;
   private weapon: Weapon;
   private bulletGroup: Phaser.Physics.Arcade.Group;
+  private invincibleUntil = 0;
   hp: number;
 
   constructor(scene: Phaser.Scene, x: number, y: number, bulletGroup: Phaser.Physics.Arcade.Group) {
@@ -38,7 +39,18 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   takeDamage(amount: number): void {
+    const now = this.scene.time.now;
+    if (now < this.invincibleUntil) return;
+    this.invincibleUntil = now + 500;
+
     this.hp -= amount;
+    this.scene.events.emit("hpChanged", this.hp);
+
+    this.setTint(0xff4444);
+    this.scene.time.delayedCall(150, () => {
+      if (this.active) this.setTint(0x00ff88);
+    });
+
     if (this.hp <= 0) {
       this.setActive(false).setVisible(false);
       this.scene.events.emit("playerDied");
