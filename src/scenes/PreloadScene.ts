@@ -23,6 +23,10 @@ export class PreloadScene extends Phaser.Scene {
     gfx.fillStyle(0xff4444, 1).fillRect(0, 0, 32, 32);
     gfx.generateTexture("enemy_melee", 32, 32);
 
+    gfx.clear();
+    gfx.fillStyle(0x4444ff, 1).fillRect(0, 0, 32, 32);
+    gfx.generateTexture("enemy_shooter", 32, 32);
+
     gfx.destroy();
 
     this.scene.start(GAME_SCENE_KEY);

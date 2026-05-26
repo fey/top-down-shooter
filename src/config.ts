@@ -12,3 +12,10 @@ export const MELEE_ENEMY_HP = 2;
 export const MELEE_ENEMY_SPEED = 140;
 export const MELEE_ENEMY_DAMAGE = 1;
 export const MELEE_ENEMY_ATTACK_COOLDOWN = 600;
+
+export const SHOOTER_ENEMY_HP = 3;
+export const SHOOTER_ENEMY_SPEED = 100;
+export const SHOOTER_ENEMY_DAMAGE = 1;
+export const SHOOTER_ENEMY_FIRE_COOLDOWN = 1500;
+export const SHOOTER_RANGE = 350;
+export const SHOOTER_BULLET_SPEED = 400;

@@ -5,8 +5,10 @@ import { Bullet } from "../entities/Bullet";
 import type { Enemy } from "../entities/Enemy";
 import { MeleeEnemy } from "../entities/MeleeEnemy";
 import { Player } from "../entities/Player";
+import { ShooterEnemy } from "../entities/ShooterEnemy";
 import type { LevelData } from "../level/level1";
 import { level1 } from "../level/level1";
+
 const WALL_COLOR = 0x555566;
 
 export const GAME_SCENE_KEY = "Game";
@@ -15,6 +17,7 @@ export class GameScene extends Phaser.Scene {
   private player!: Player;
   private wallGroup!: Phaser.Physics.Arcade.StaticGroup;
   private playerBullets!: Phaser.Physics.Arcade.Group;
+  private enemyBullets!: Phaser.Physics.Arcade.Group;
   private enemyGroup!: Phaser.Physics.Arcade.Group;
 
   constructor() {
@@ -27,6 +30,7 @@ export class GameScene extends Phaser.Scene {
 
     this.wallGroup = this.physics.add.staticGroup();
     this.playerBullets = this.physics.add.group({ classType: Bullet, runChildUpdate: true });
+    this.enemyBullets = this.physics.add.group({ classType: Bullet, runChildUpdate: true });
     this.enemyGroup = this.physics.add.group();
 
     this.loadLevel(level1);
@@ -37,6 +41,16 @@ export class GameScene extends Phaser.Scene {
 
     this.physics.add.collider(this.playerBullets, this.wallGroup, (bullet) => {
       (bullet as Phaser.GameObjects.GameObject).destroy();
+    });
+
+    this.physics.add.collider(this.enemyBullets, this.wallGroup, (bullet) => {
+      (bullet as Phaser.GameObjects.GameObject).destroy();
+    });
+
+    this.physics.add.overlap(this.enemyBullets, this.player, (bulletObj) => {
+      const bullet = bulletObj as Bullet;
+      bullet.destroy();
+      this.player.takeDamage(bullet.damage);
     });
 
     this.physics.add.overlap(
@@ -88,6 +102,10 @@ export class GameScene extends Phaser.Scene {
     for (const spawn of data.enemySpawns) {
       if (spawn.type === "melee") {
         this.enemyGroup.add(new MeleeEnemy(this, spawn.x, spawn.y));
+      } else if (spawn.type === "shooter") {
+        this.enemyGroup.add(
+          new ShooterEnemy(this, spawn.x, spawn.y, this.enemyBullets, this.wallGroup),
+        );
       }
     }
   }

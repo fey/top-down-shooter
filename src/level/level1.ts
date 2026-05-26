@@ -37,5 +37,7 @@ export const level1: LevelData = {
     { type: "melee", x: 1000, y: 500 },
     { type: "melee", x: 800, y: 800 },
     { type: "melee", x: 1400, y: 600 },
+    { type: "shooter", x: 1550, y: 200 },
+    { type: "shooter", x: 300, y: 700 },
   ],
 };
