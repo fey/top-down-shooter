@@ -1,5 +1,6 @@
 import type Phaser from "phaser";
 import { PLAYER_HP } from "../config";
+import type { Enemy } from "../entities/Enemy";
 import type { Player } from "../entities/Player";
 
 export class DebugOverlay {
@@ -26,12 +27,20 @@ export class DebugOverlay {
   private refresh(): void {
     if (!this.player.active) return;
     const body = this.player.body as Phaser.Physics.Arcade.Body;
-    this.text.setText([
+    const lines = [
       `HP:     ${this.player.hp} / ${PLAYER_HP}`,
       `Враги:  ${this.enemies.getLength()}`,
       `Pos:    ${Math.round(this.player.x)}, ${Math.round(this.player.y)}`,
       `Vel:    ${Math.round(body.velocity.x)}, ${Math.round(body.velocity.y)}`,
       `FPS:    ${Math.round(this.player.scene.game.loop.actualFps)}`,
-    ]);
+      `F1: debug paths`,
+    ];
+    let idx = 0;
+    for (const obj of this.enemies.getChildren()) {
+      const e = obj as Enemy;
+      if (e.active) lines.push(`E${idx}: ${e.state}`);
+      idx++;
+    }
+    this.text.setText(lines);
   }
 }
