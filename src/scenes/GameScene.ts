@@ -9,6 +9,7 @@ import { ShooterEnemy } from "../entities/ShooterEnemy";
 import type { LevelData } from "../level/level1";
 import { level1 } from "../level/level1";
 import { GAME_OVER_SCENE_KEY } from "./GameOverScene";
+import { LEVEL_SELECT_SCENE_KEY } from "./LevelSelectScene";
 
 const WALL_COLOR = 0x555566;
 
@@ -21,9 +22,17 @@ export class GameScene extends Phaser.Scene {
   private enemyBullets!: Phaser.Physics.Arcade.Group;
   private enemyGroup!: Phaser.Physics.Arcade.Group;
   private gameOver = false;
+  private hasEnemies = false;
+  private levelData: LevelData = level1;
 
   constructor() {
     super(GAME_SCENE_KEY);
+  }
+
+  init(data: { level?: LevelData }): void {
+    this.levelData = data.level ?? level1;
+    this.gameOver = false;
+    this.hasEnemies = false;
   }
 
   create(): void {
@@ -35,7 +44,7 @@ export class GameScene extends Phaser.Scene {
     this.enemyBullets = this.physics.add.group({ classType: Bullet, runChildUpdate: true });
     this.enemyGroup = this.physics.add.group();
 
-    this.loadLevel(level1);
+    this.loadLevel(this.levelData);
 
     this.physics.add.collider(this.player, this.wallGroup);
     this.physics.add.collider(this.enemyGroup, this.wallGroup);
@@ -86,6 +95,10 @@ export class GameScene extends Phaser.Scene {
       this.scene.start(GAME_OVER_SCENE_KEY, { win: false });
     });
 
+    this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.ESC).once("down", () => {
+      this.scene.start(LEVEL_SELECT_SCENE_KEY);
+    });
+
     new DebugOverlay(this, this.player, this.enemyGroup);
   }
 
@@ -98,7 +111,7 @@ export class GameScene extends Phaser.Scene {
       if (enemy.active) (enemy as Enemy).tick(this.player);
     }
 
-    if (this.enemyGroup.countActive(true) === 0) {
+    if (this.hasEnemies && this.enemyGroup.countActive(true) === 0) {
       this.gameOver = true;
       this.scene.start(GAME_OVER_SCENE_KEY, { win: true });
     }
@@ -122,5 +135,6 @@ export class GameScene extends Phaser.Scene {
         );
       }
     }
+    this.hasEnemies = data.enemySpawns.length > 0;
   }
 }

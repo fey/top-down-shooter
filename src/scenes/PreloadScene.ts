@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { GAME_SCENE_KEY } from "./GameScene";
+import { LEVEL_SELECT_SCENE_KEY } from "./LevelSelectScene";
 
 export const PRELOAD_SCENE_KEY = "Preload";
 
@@ -29,6 +29,6 @@ export class PreloadScene extends Phaser.Scene {
 
     gfx.destroy();
 
-    this.scene.start(GAME_SCENE_KEY);
+    this.scene.start(LEVEL_SELECT_SCENE_KEY);
   }
 }
