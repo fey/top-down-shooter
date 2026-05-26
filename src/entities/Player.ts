@@ -39,6 +39,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   takeDamage(amount: number): void {
+    if (!this.active || !this.scene) return;
     const now = this.scene.time.now;
     if (now < this.invincibleUntil) return;
     this.invincibleUntil = now + 500;
