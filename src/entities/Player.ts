@@ -57,7 +57,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     const pointer = this.scene.input.activePointer;
-    const angle = Phaser.Math.Angle.Between(this.x, this.y, pointer.worldX, pointer.worldY);
+    const worldPoint = this.scene.cameras.main.getWorldPoint(pointer.x, pointer.y);
+    const angle = Phaser.Math.Angle.Between(this.x, this.y, worldPoint.x, worldPoint.y);
     this.setRotation(angle + Math.PI / 2);
 
     if (pointer.isDown) {
