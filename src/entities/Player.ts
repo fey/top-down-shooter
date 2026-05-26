@@ -40,7 +40,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   takeDamage(amount: number): void {
     this.hp -= amount;
     if (this.hp <= 0) {
-      this.destroy();
+      this.setActive(false).setVisible(false);
+      this.scene.events.emit("playerDied");
     }
   }
 

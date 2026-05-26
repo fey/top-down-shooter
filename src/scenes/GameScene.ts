@@ -8,6 +8,7 @@ import { Player } from "../entities/Player";
 import { ShooterEnemy } from "../entities/ShooterEnemy";
 import type { LevelData } from "../level/level1";
 import { level1 } from "../level/level1";
+import { GAME_OVER_SCENE_KEY } from "./GameOverScene";
 
 const WALL_COLOR = 0x555566;
 
@@ -19,6 +20,7 @@ export class GameScene extends Phaser.Scene {
   private playerBullets!: Phaser.Physics.Arcade.Group;
   private enemyBullets!: Phaser.Physics.Arcade.Group;
   private enemyGroup!: Phaser.Physics.Arcade.Group;
+  private gameOver = false;
 
   constructor() {
     super(GAME_SCENE_KEY);
@@ -79,14 +81,26 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.startFollow(this.player);
     this.cameras.main.setBounds(0, 0, MAP_WIDTH, MAP_HEIGHT);
 
+    this.events.once("playerDied", () => {
+      this.gameOver = true;
+      this.scene.start(GAME_OVER_SCENE_KEY, { win: false });
+    });
+
     new DebugOverlay(this, this.player, this.enemyGroup);
   }
 
   override update(): void {
+    if (this.gameOver) return;
+
     if (this.player.active) this.player.update();
 
     for (const enemy of this.enemyGroup.getChildren()) {
       if (enemy.active) (enemy as Enemy).tick(this.player);
+    }
+
+    if (this.enemyGroup.countActive(true) === 0) {
+      this.gameOver = true;
+      this.scene.start(GAME_OVER_SCENE_KEY, { win: true });
     }
   }
 
