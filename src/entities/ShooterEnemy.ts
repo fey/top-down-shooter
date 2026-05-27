@@ -22,7 +22,6 @@ export class ShooterEnemy extends Enemy {
   private strafeSign = 1;
   private strafeFlipTime = 0;
   private readonly lastKnownPos = new Phaser.Math.Vector2(-9999, -9999);
-  private hasSeenPlayer = false;
   private losCache = false; // refreshed at the top of every tick()
 
   constructor(
@@ -44,7 +43,6 @@ export class ShooterEnemy extends Enemy {
     this.losCache = this.hasLoS(player);
     if (this.losCache) {
       this.lastKnownPos.set(player.x, player.y);
-      this.hasSeenPlayer = true;
     }
     if (this.checkAndTriggerDodge(player)) return;
 
@@ -62,10 +60,6 @@ export class ShooterEnemy extends Enemy {
         break;
 
       case EnemyState.CHASE: {
-        if (this.hasSeenPlayer && !this.losCache) {
-          this.state = EnemyState.SEARCH;
-          break;
-        }
         const target = this.getSlotPos(player);
         this.moveAlongPath(target, SHOOTER_ENEMY_SPEED);
         if (dist <= SHOOTER_RANGE && this.losCache) {
@@ -116,7 +110,6 @@ export class ShooterEnemy extends Enemy {
         const distToLkp = Phaser.Math.Distance.BetweenPoints(this, this.lastKnownPos);
         if (distToLkp < WAYPOINT_REACH_DIST) {
           this.setVelocity(0, 0);
-          this.hasSeenPlayer = false;
           this.state = EnemyState.IDLE;
         }
         break;
