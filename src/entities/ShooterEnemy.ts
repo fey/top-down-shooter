@@ -60,15 +60,14 @@ export class ShooterEnemy extends Enemy {
         break;
 
       case EnemyState.CHASE: {
+        if (this.hasSeenPlayer && !this.hasLoS(player)) {
+          this.state = EnemyState.SEARCH;
+          break;
+        }
         const target = this.getSlotPos(player);
         this.moveAlongPath(target, SHOOTER_ENEMY_SPEED);
-        if (dist <= SHOOTER_RANGE) {
-          if (this.hasLoS(player)) {
-            this.state = EnemyState.SHOOT;
-          } else {
-            // FUTURE: re-enable strafe when polished
-            // this.enterStrafe(now);
-          }
+        if (dist <= SHOOTER_RANGE && this.hasLoS(player)) {
+          this.state = EnemyState.SHOOT;
         }
         break;
       }
