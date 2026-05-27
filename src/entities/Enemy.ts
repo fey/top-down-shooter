@@ -6,6 +6,8 @@ import {
   DODGE_DURATION,
   DODGE_SPEED_MULT,
   PATH_RECALC_DIST,
+  STUCK_MOVE_THRESHOLD,
+  STUCK_TIME_MS,
   WAYPOINT_REACH_DIST,
 } from "../config";
 import type { Player } from "./Player";
@@ -37,6 +39,11 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
   private waypoints: Phaser.Math.Vector2[] = [];
   private waypointIndex = 0;
   private readonly lastPathTarget = new Phaser.Math.Vector2(-9999, -9999);
+
+  // Stuck detection state
+  private readonly stuckCheckPos = new Phaser.Math.Vector2();
+  private stuckCheckTime = 0;
+  private stuckRecoveryStage = 0; // 0=normal, 1=waypoint-skip tried
 
   constructor(scene: Phaser.Scene, x: number, y: number, texture: string, hp: number) {
     super(scene, x, y, texture);
@@ -91,6 +98,17 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
   }
 
   moveAlongPath(target: Phaser.Math.Vector2, speed: number): void {
+    // Escape if physically inside a blocked grid cell (e.g. pushed into wall by physics)
+    if (this.pathfinder && !this.pathfinder.isWalkableAt(this.x, this.y)) {
+      const escapeTarget = this.pathfinder.nearestWalkableWorld(this.x, this.y);
+      if (escapeTarget) {
+        const angle = Phaser.Math.Angle.Between(this.x, this.y, escapeTarget.x, escapeTarget.y);
+        // 1.5× speed so escape force overcomes collision response pushing us back
+        this.setVelocity(Math.cos(angle) * speed * 1.5, Math.sin(angle) * speed * 1.5);
+        return;
+      }
+    }
+
     const targetMoved =
       Phaser.Math.Distance.BetweenPoints(target, this.lastPathTarget) > PATH_RECALC_DIST;
 
@@ -105,11 +123,37 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
       return;
     }
 
+    // Stuck detection: if enemy hasn't moved STUCK_MOVE_THRESHOLD px in STUCK_TIME_MS ms
+    // while following a path, skip current waypoint or force a repath.
+    const now = this.scene.time.now;
+    if (this.stuckCheckTime === 0) {
+      this.stuckCheckPos.set(this.x, this.y);
+      this.stuckCheckTime = now;
+    } else if (now - this.stuckCheckTime > STUCK_TIME_MS) {
+      const moved = Phaser.Math.Distance.BetweenPoints(this, this.stuckCheckPos);
+      if (moved < STUCK_MOVE_THRESHOLD) {
+        if (this.stuckRecoveryStage === 0) {
+          // Stage 1: skip current waypoint and try the next one
+          this.waypointIndex = Math.min(this.waypointIndex + 1, this.waypoints.length - 1);
+          this.stuckRecoveryStage = 1;
+        } else {
+          // Stage 2: force a full repath from current position
+          this.recalcPath(target);
+          this.stuckRecoveryStage = 0;
+        }
+      } else {
+        this.stuckRecoveryStage = 0; // made real progress, reset recovery stage
+      }
+      this.stuckCheckPos.set(this.x, this.y);
+      this.stuckCheckTime = now;
+    }
+
     const wp = this.waypoints[this.waypointIndex];
     if (wp && Phaser.Math.Distance.Between(this.x, this.y, wp.x, wp.y) < WAYPOINT_REACH_DIST) {
       this.waypointIndex++;
       if (this.waypointIndex >= this.waypoints.length) {
         this.waypoints = [];
+        this.stuckCheckTime = 0; // reset so detection restarts on next path
         this.setVelocity(0, 0);
         return;
       }
@@ -124,6 +168,7 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
   private recalcPath(target: Phaser.Math.Vector2): void {
     this.lastPathTarget.copy(target);
     this.waypointIndex = 0;
+    this.stuckCheckTime = 0; // reset stuck detection for the new path
     if (this.pathfinder) {
       this.waypoints = this.pathfinder.findPath(this.x, this.y, target.x, target.y);
     } else {

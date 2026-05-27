@@ -164,6 +164,14 @@ export class Pathfinder {
         if (closed.has(nKey)) continue;
         if (!this.grid[neighbor.row]?.[neighbor.col]) continue;
 
+        // Prevent diagonal corner-cutting: both cardinal neighbours must be walkable
+        const dCol = neighbor.col - current.col;
+        const dRow = neighbor.row - current.row;
+        if (dCol !== 0 && dRow !== 0) {
+          if (!this.grid[current.row]?.[neighbor.col]) continue;
+          if (!this.grid[neighbor.row]?.[current.col]) continue;
+        }
+
         // Diagonal cost: Math.SQRT2; cardinal: 1
         const isDiag = neighbor.col !== current.col && neighbor.row !== current.row;
         const moveCost = isDiag ? Math.SQRT2 : 1;
@@ -205,6 +213,22 @@ export class Pathfinder {
       }
     }
     return result;
+  }
+
+  /** Returns true if the world-space point (x, y) lies in a walkable grid cell. */
+  isWalkableAt(x: number, y: number): boolean {
+    const cell = this.worldToCell(x, y);
+    return this.grid[cell.row]?.[cell.col] ?? false;
+  }
+
+  /**
+   * Returns the world-space centre of the nearest walkable cell to (x, y),
+   * or null if the entire grid is blocked (shouldn't happen in practice).
+   */
+  nearestWalkableWorld(x: number, y: number): Phaser.Math.Vector2 | null {
+    const cell = this.worldToCell(x, y);
+    const nearest = this.nearestWalkable(cell);
+    return nearest ? this.cellToWorld(nearest) : null;
   }
 
   private reconstructPath(node: AStarNode): Cell[] {

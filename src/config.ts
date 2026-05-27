@@ -34,3 +34,5 @@ export const DODGE_SPEED_MULT = 1.8;
 export const PATH_CELL_SIZE = 64;
 export const PATH_RECALC_DIST = 128;
 export const WAYPOINT_REACH_DIST = 24;
+export const STUCK_TIME_MS = 350; // мс без движения → враг считается застрявшим
+export const STUCK_MOVE_THRESHOLD = 6; // пикселей — меньше этого = не двигался
