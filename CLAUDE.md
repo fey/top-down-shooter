@@ -87,7 +87,7 @@ The big-picture shape (full details in `docs/spec.md`):
 
 - **Scenes** (`src/scenes/`) — current flow: `Boot → Preload → LevelSelect → Game → GameOver`. HUD and MainMenu are not yet implemented (planned in M8). When implemented, HUD will communicate with `GameScene` only through `scene.events.emit(...)` events — do not reach into `GameScene` directly from the HUD.
 - **GameScene** is the integration hub: it owns the player, enemy groups, wall (static physics) group, and two bullet groups (player bullets vs. enemy bullets). All collision wiring lives here.
-- **Entities** (`src/entities/`) are Phaser sprite subclasses with an Arcade Physics body. Each owns its own AI/behavior tick. `Enemy` base class has a full state machine (IDLE/CHASE/ATTACK/SHOOT/SEARCH/DODGE), A* pathfinding, slot-based positioning, dodge mechanic, and pack alerts. `MeleeEnemy` and `ShooterEnemy` are concrete subtypes.
+- **Entities** (`src/entities/`) are Phaser sprite subclasses with an Arcade Physics body. Each owns its own AI/behavior tick. `Enemy` base class has a full state machine (IDLE/CHASE/ATTACK/SHOOT/SEARCH/DODGE), A* pathfinding, slot-based positioning, dodge mechanic, and pack alerts. `MeleeEnemy` and `ShooterEnemy` are concrete subtypes. See `docs/superpowers/specs/2026-05-27-enemy-ai-current-design.md` for the full behavioral spec.
 - **AI** (`src/ai/`) — `Pathfinder` (A* on 64 px grid) and `SlotCoordinator` (8 flanking slots around the player). These are shared by both enemy types.
 - **Weapons** (`src/weapons/`) encapsulate cooldown and bullet spawning. Currently only `Pistol`. New weapons = new `Weapon` subclass, no changes elsewhere.
 - **Level data** (`src/level/levelN.ts`) is plain data — walls, enemy spawns, pickups (reserved), and a start position. `GameScene` reads this on init. To change the level, edit data, not code.
@@ -101,6 +101,7 @@ Two bullet groups (player vs. enemy) is intentional — keeps collision rules si
 - **Strict TypeScript.** No `any`, no `// @ts-ignore` without a comment explaining why.
 - **Biome is the only linter/formatter.** Don't add ESLint or Prettier; don't fight Biome's defaults.
 - **Numbers in `config.ts`, data in `level1.ts`.** Don't hardcode tuning constants or level layout inside scenes or entities.
+- **Enemy AI spec.** Before modifying enemy behavior (`src/entities/Enemy.ts`, `MeleeEnemy.ts`, `ShooterEnemy.ts`, `src/ai/`), read `docs/superpowers/specs/2026-05-27-enemy-ai-current-design.md`. Changes must either match the spec or explicitly update it in the same commit.
 - **Scene communication via events.** HUD and other overlay scenes subscribe to `scene.events` from `GameScene`; don't grab the other scene's instance.
 - **Scene keys co-located with scenes.** Each scene file exports its own key constant (`BOOT_SCENE_KEY`, etc.). Import the target scene's key when calling `scene.start()`.
 - **Out of scope for the prototype** (see roadmap): saves/progression, audio, multiple levels, mobile/gamepad controls, sprite animations beyond static Kenney art. Don't add these without explicit scope change.
