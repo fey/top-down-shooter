@@ -68,6 +68,14 @@ export class Pathfinder {
     end.col = Phaser.Math.Clamp(end.col, 0, this.cols - 1);
     end.row = Phaser.Math.Clamp(end.row, 0, this.rows - 1);
 
+    // If start cell is blocked (enemy in inflated wall zone), snap to nearest walkable
+    if (!this.grid[start.row]?.[start.col]) {
+      const fallback = this.nearestWalkable(start);
+      if (!fallback) return [];
+      start.col = fallback.col;
+      start.row = fallback.row;
+    }
+
     // If target cell is blocked, find nearest walkable cell
     if (!this.grid[end.row]?.[end.col]) {
       const fallback = this.nearestWalkable(end);
