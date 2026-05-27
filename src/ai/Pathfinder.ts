@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { PATH_CELL_SIZE } from "../config";
+import { PATH_CELL_SIZE, PATH_SMOOTH_ENABLED } from "../config";
 
 interface WallDef {
   x: number;
@@ -91,7 +91,96 @@ export class Pathfinder {
     // Replace last waypoint with exact target position
     waypoints[waypoints.length - 1] = new Phaser.Math.Vector2(toX, toY);
 
+    if (PATH_SMOOTH_ENABLED) {
+      return this.smoothPath(waypoints);
+    }
     return waypoints;
+  }
+
+  /**
+   * String pulling: remove unnecessary intermediate waypoints by checking
+   * line-of-sight between an anchor and each subsequent waypoint. If LoS
+   * holds, skip the intermediate point; when it breaks, commit the last
+   * visible point and advance the anchor.
+   */
+  private smoothPath(waypoints: Phaser.Math.Vector2[]): Phaser.Math.Vector2[] {
+    if (waypoints.length <= 2) return waypoints;
+
+    // biome-ignore lint/style/noNonNullAssertion: waypoints.length > 2 guarantees index 0 exists
+    const result: Phaser.Math.Vector2[] = [waypoints[0]!];
+    let anchor = 0;
+
+    for (let i = 2; i < waypoints.length; i++) {
+      // biome-ignore lint/style/noNonNullAssertion: anchor < i <= waypoints.length - 1
+      const anchorWp = waypoints[anchor]!;
+      // biome-ignore lint/style/noNonNullAssertion: i < waypoints.length by loop condition
+      const candidateWp = waypoints[i]!;
+      if (!this.gridLoS(anchorWp.x, anchorWp.y, candidateWp.x, candidateWp.y)) {
+        // LoS broken: commit the previous waypoint (i-1) as a bend point
+        // biome-ignore lint/style/noNonNullAssertion: i >= 2, so i-1 >= 1 < waypoints.length
+        result.push(waypoints[i - 1]!);
+        anchor = i - 1;
+      }
+    }
+
+    // Always include the final destination
+    // biome-ignore lint/style/noNonNullAssertion: waypoints.length > 2 guarantees last index exists
+    result.push(waypoints[waypoints.length - 1]!);
+    return result;
+  }
+
+  /**
+   * DDA line-of-sight check on the precomputed grid.
+   * Takes world-space coordinates; returns false if any intermediate
+   * grid cell along the line is blocked.
+   */
+  private gridLoS(ax: number, ay: number, bx: number, by: number): boolean {
+    const c0 = Math.floor(ax / this.cellSize);
+    const r0 = Math.floor(ay / this.cellSize);
+    const c1 = Math.floor(bx / this.cellSize);
+    const r1 = Math.floor(by / this.cellSize);
+
+    const dc = Math.abs(c1 - c0);
+    const dr = Math.abs(r1 - r0);
+    const sc = c0 < c1 ? 1 : -1;
+    const sr = r0 < r1 ? 1 : -1;
+    let err = dc - dr;
+    let c = c0;
+    let r = r0;
+
+    while (c !== c1 || r !== r1) {
+      // Skip the start cell (enemy may be at a cell edge; check only intermediate cells)
+      if (c !== c0 || r !== r0) {
+        if (!this.isWalkable(c, r)) return false;
+      }
+      const e2 = 2 * err;
+      if (e2 > -dr) {
+        err -= dr;
+        c += sc;
+      }
+      if (e2 < dc) {
+        err += dc;
+        r += sr;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Returns true if the grid cell at (col, row) is within bounds and walkable.
+   * Used by Enemy for wall separation force sampling.
+   */
+  public isWalkable(col: number, row: number): boolean {
+    if (col < 0 || row < 0 || col >= this.cols || row >= this.rows) return false;
+    return this.grid[row]?.[col] === true;
+  }
+
+  /**
+   * Converts a world-space position to its grid cell coordinates.
+   * Public wrapper for Enemy's wall separation force calculations.
+   */
+  public worldToGridCell(x: number, y: number): { col: number; row: number } {
+    return this.worldToCell(x, y);
   }
 
   private worldToCell(x: number, y: number): Cell {

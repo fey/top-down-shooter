@@ -5,9 +5,11 @@ import {
   DODGE_COOLDOWN,
   DODGE_DURATION,
   DODGE_SPEED_MULT,
+  PATH_CELL_SIZE,
   PATH_RECALC_DIST,
   STUCK_MOVE_THRESHOLD,
   STUCK_TIME_MS,
+  WALL_SEPARATION_STRENGTH,
   WAYPOINT_REACH_DIST,
 } from "../config";
 import type { Player } from "./Player";
@@ -162,7 +164,44 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
     const current = this.waypoints[this.waypointIndex];
     if (!current) return;
     const angle = Phaser.Math.Angle.Between(this.x, this.y, current.x, current.y);
-    this.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
+    const wallForce = this.getWallSeparationForce();
+    this.setVelocity(Math.cos(angle) * speed + wallForce.x, Math.sin(angle) * speed + wallForce.y);
+  }
+
+  /**
+   * Samples 8 directions at PATH_CELL_SIZE distance and returns a repulsion
+   * force pushing the enemy away from nearby blocked grid cells.
+   * Weight = 1/distance (linear, not squared — keeps the force gentle).
+   */
+  private getWallSeparationForce(): Phaser.Math.Vector2 {
+    if (!this.pathfinder) return new Phaser.Math.Vector2(0, 0);
+
+    const force = new Phaser.Math.Vector2(0, 0);
+    const sampleDist = PATH_CELL_SIZE;
+
+    for (let i = 0; i < 8; i++) {
+      const angle = (i * Math.PI) / 4;
+      const sx = this.x + Math.cos(angle) * sampleDist;
+      const sy = this.y + Math.sin(angle) * sampleDist;
+      const { col, row } = this.pathfinder.worldToGridCell(sx, sy);
+
+      if (!this.pathfinder.isWalkable(col, row)) {
+        // Cell centre in world space
+        const cellCx = col * PATH_CELL_SIZE + PATH_CELL_SIZE / 2;
+        const cellCy = row * PATH_CELL_SIZE + PATH_CELL_SIZE / 2;
+        const dx = this.x - cellCx;
+        const dy = this.y - cellCy;
+        const dist = Math.max(1, Math.sqrt(dx * dx + dy * dy));
+        // Repulsion: direction from cell toward enemy, weighted by 1/dist
+        force.x += (dx / dist) * (1 / dist);
+        force.y += (dy / dist) * (1 / dist);
+      }
+    }
+
+    if (force.lengthSq() > 0) {
+      force.normalize().scale(WALL_SEPARATION_STRENGTH);
+    }
+    return force;
   }
 
   private recalcPath(target: Phaser.Math.Vector2): void {
