@@ -3,6 +3,13 @@ export const PLAYER_SPEED = 200;
 export const MAP_WIDTH = 1920;
 export const MAP_HEIGHT = 1080;
 
+// Спрайты Kenney крупнее заглушек 32×32, приводим к ~30px и задаём круговое
+// тело (тела Arcade не вращаются — круг даёт стабильный коллайдер при повороте)
+export const PLAYER_SPRITE_SCALE = 0.7;
+export const ENEMY_SPRITE_SCALE = 0.7;
+export const PLAYER_BODY_RADIUS = 20; // в пикселях текстуры; ×scale → ~14px на экране
+export const ENEMY_BODY_RADIUS = 20;
+
 export const BULLET_SPEED = 600;
 export const BULLET_TTL = 2000;
 export const BULLET_DAMAGE = 1;

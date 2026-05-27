@@ -5,6 +5,8 @@ import {
   DODGE_COOLDOWN,
   DODGE_DURATION,
   DODGE_SPEED_MULT,
+  ENEMY_BODY_RADIUS,
+  ENEMY_SPRITE_SCALE,
   PATH_CELL_SIZE,
   PATH_RECALC_DIST,
   STUCK_MOVE_THRESHOLD,
@@ -55,6 +57,9 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
     super(scene, x, y, texture);
     scene.add.existing(this);
     scene.physics.add.existing(this);
+    this.setScale(ENEMY_SPRITE_SCALE);
+    const r = ENEMY_BODY_RADIUS;
+    this.setCircle(r, this.width / 2 - r, this.height / 2 - r);
     this.hp = hp;
   }
 
@@ -257,7 +262,7 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
     if (now - this.lastDodgeTime < DODGE_COOLDOWN) return false;
     if (!this.canDodge(player)) return false;
 
-    const aimAngle = player.rotation - Math.PI / 2;
+    const aimAngle = player.rotation;
     const angleToEnemy = Phaser.Math.Angle.Between(player.x, player.y, this.x, this.y);
     const diff = Math.abs(Phaser.Math.Angle.Wrap(aimAngle - angleToEnemy));
 

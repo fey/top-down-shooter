@@ -32,7 +32,6 @@ export class ShooterEnemy extends Enemy {
     walls: WallDef[],
   ) {
     super(scene, x, y, "enemy_shooter", SHOOTER_ENEMY_HP);
-    this.setTint(0x4444ff);
     this.baseSpeed = SHOOTER_ENEMY_SPEED;
     this.flankRadius = SHOOTER_RANGE;
     this.enemyBullets = enemyBullets;
@@ -40,6 +39,7 @@ export class ShooterEnemy extends Enemy {
   }
 
   tick(player: Player): void {
+    this.setRotation(Phaser.Math.Angle.Between(this.x, this.y, player.x, player.y));
     this.losCache = this.hasLoS(player);
     if (this.losCache) {
       this.lastKnownPos.set(player.x, player.y);

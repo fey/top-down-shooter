@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { PLAYER_HP, PLAYER_SPEED } from "../config";
+import { PLAYER_BODY_RADIUS, PLAYER_HP, PLAYER_SPEED, PLAYER_SPRITE_SCALE } from "../config";
 import { Pistol } from "../weapons/Pistol";
 import type { Weapon } from "../weapons/Weapon";
 
@@ -21,8 +21,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     super(scene, x, y, "player");
     scene.add.existing(this);
     scene.physics.add.existing(this);
+    this.setScale(PLAYER_SPRITE_SCALE);
+    const r = PLAYER_BODY_RADIUS;
+    this.setCircle(r, this.width / 2 - r, this.height / 2 - r);
     this.setCollideWorldBounds(true);
-    this.setTint(0x00ff88);
     this.hp = PLAYER_HP;
 
     const keyboard = scene.input.keyboard;
@@ -49,7 +51,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     this.setTint(0xff4444);
     this.scene.time.delayedCall(150, () => {
-      if (this.active) this.setTint(0x00ff88);
+      if (this.active) this.clearTint();
     });
 
     if (this.hp <= 0) {
@@ -72,7 +74,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const pointer = this.scene.input.activePointer;
     const worldPoint = this.scene.cameras.main.getWorldPoint(pointer.x, pointer.y);
     const angle = Phaser.Math.Angle.Between(this.x, this.y, worldPoint.x, worldPoint.y);
-    this.setRotation(angle + Math.PI / 2);
+    this.setRotation(angle);
 
     if (pointer.isDown) {
       this.weapon.tryFire(this.bulletGroup, this.x, this.y, angle, this.scene.time.now);

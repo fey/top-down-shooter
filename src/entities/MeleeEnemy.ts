@@ -23,13 +23,13 @@ export class MeleeEnemy extends Enemy {
 
   constructor(scene: Phaser.Scene, x: number, y: number, walls: WallDef[]) {
     super(scene, x, y, "enemy_melee", MELEE_ENEMY_HP);
-    this.setTint(0xff4444);
     this.baseSpeed = MELEE_ENEMY_SPEED;
     this.flankRadius = MELEE_SLOT_RADIUS;
     this.setWalls(walls);
   }
 
   tick(player: Player): void {
+    this.setRotation(Phaser.Math.Angle.Between(this.x, this.y, player.x, player.y));
     this.prevLosCache = this.losCache;
     this.losCache = this.hasLoS(player);
     if (this.losCache) {
