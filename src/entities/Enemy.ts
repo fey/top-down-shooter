@@ -97,6 +97,7 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.waypoints = [];
     this.waypointIndex = 0;
     this.stuckCheckTime = 0;
+    this.stuckRecoveryStage = 0;
   }
 
   takeDamage(amount: number): void {
