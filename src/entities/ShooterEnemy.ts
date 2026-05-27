@@ -74,6 +74,11 @@ export class ShooterEnemy extends Enemy {
       }
 
       case EnemyState.SHOOT: {
+        // нет LoS — сразу уходим в поиск, движение не применяем
+        if (!this.hasLoS(player)) {
+          this.state = EnemyState.SEARCH;
+          break;
+        }
         // кайтинг: держать дистанцию SHOOTER_RANGE ± буфер
         if (dist < SHOOTER_KITE_RETREAT_DIST) {
           // игрок слишком близко — запросить новый слот и перепозиционироваться
@@ -85,14 +90,10 @@ export class ShooterEnemy extends Enemy {
         } else {
           this.applyStrafe(player, now); // непрерывное боковое движение
         }
-        // стрельба не зависит от движения
-        if (now - this.lastFiredAt >= SHOOTER_ENEMY_FIRE_COOLDOWN && this.hasLoS(player)) {
+        // LoS гарантирован проверкой выше — стреляем без доп. проверки
+        if (now - this.lastFiredAt >= SHOOTER_ENEMY_FIRE_COOLDOWN) {
           this.spawnBullet(Phaser.Math.Angle.Between(this.x, this.y, player.x, player.y));
           this.lastFiredAt = now;
-        }
-        if (!this.hasLoS(player)) {
-          this.state = EnemyState.SEARCH;
-          break;
         }
         if (dist > SHOOTER_RANGE) this.state = EnemyState.CHASE;
         break;
