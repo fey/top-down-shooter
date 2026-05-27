@@ -13,6 +13,7 @@ import type { Player } from "./Player";
 
 export class MeleeEnemy extends Enemy {
   private lastAttackTime = 0;
+  private losCache = false;
 
   constructor(
     scene: Phaser.Scene,
@@ -28,6 +29,7 @@ export class MeleeEnemy extends Enemy {
   }
 
   tick(player: Player): void {
+    this.losCache = this.hasLoS(player);
     if (this.checkAndTriggerDodge(player)) return;
 
     const dist = Phaser.Math.Distance.Between(this.x, this.y, player.x, player.y);
@@ -35,7 +37,7 @@ export class MeleeEnemy extends Enemy {
     switch (this.state) {
       case EnemyState.IDLE:
         this.setVelocity(0, 0);
-        if (dist < ENEMY_AGGRO_RANGE && this.hasLoS(player)) {
+        if (dist < ENEMY_AGGRO_RANGE && this.losCache) {
           this.scene.events.emit("requestSlot", this);
           this.state = EnemyState.CHASE;
           this.scene.events.emit("packAlert", this.x, this.y);
@@ -43,7 +45,9 @@ export class MeleeEnemy extends Enemy {
         break;
 
       case EnemyState.CHASE: {
-        const target = this.getSlotPos(player);
+        const target = this.losCache
+          ? this.getSlotPos(player)
+          : new Phaser.Math.Vector2(player.x, player.y);
         this.moveAlongPath(target, MELEE_ENEMY_SPEED);
         if (dist < MELEE_ATTACK_RANGE) this.state = EnemyState.ATTACK;
         break;
