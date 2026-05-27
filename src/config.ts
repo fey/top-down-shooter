@@ -12,6 +12,7 @@ export const MELEE_ENEMY_HP = 2;
 export const MELEE_ENEMY_SPEED = 140;
 export const MELEE_ENEMY_DAMAGE = 1;
 export const MELEE_ENEMY_ATTACK_COOLDOWN = 600;
+export const MELEE_SEARCH_TIMEOUT = 1500; // мс ожидания у lastKnownPos перед де-агро
 
 export const SHOOTER_ENEMY_HP = 3;
 export const SHOOTER_ENEMY_SPEED = 100;
@@ -37,4 +38,4 @@ export const WAYPOINT_REACH_DIST = 24;
 export const STUCK_TIME_MS = 350; // мс без движения → враг считается застрявшим
 export const STUCK_MOVE_THRESHOLD = 6; // пикселей — меньше этого = не двигался
 export const PATH_SMOOTH_ENABLED = true;
-export const WALL_SEPARATION_STRENGTH = 50;
+export const WALL_SEPARATION_STRENGTH = 10;
