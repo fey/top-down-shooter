@@ -77,7 +77,7 @@
                  "opacity":1,
                  "point":true,
                  "rotation":0,
-                 "type":"",
+                 "type":"player_start",
                  "visible":true,
                  "width":0,
                  "x":350,
@@ -90,7 +90,7 @@
                  "opacity":1,
                  "point":true,
                  "rotation":0,
-                 "type":"",
+                 "type":"melee",
                  "visible":true,
                  "width":0,
                  "x":1440,
@@ -110,8 +110,17 @@
  "tileheight":64,
  "tilesets":[
         {
+         "columns":27,
          "firstgid":1,
-         "source":"tilesheet_complete.tsx"
+         "image":"..\/..\/..\/tilesheet_complete.png",
+         "imageheight":1280,
+         "imagewidth":1728,
+         "margin":0,
+         "name":"tilesheet_complete",
+         "spacing":0,
+         "tilecount":540,
+         "tileheight":64,
+         "tilewidth":64
         }],
  "tilewidth":64,
  "type":"map",
