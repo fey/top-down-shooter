@@ -37,8 +37,7 @@ export class ShooterEnemy extends Enemy {
   }
 
   tick(player: Player): void {
-    // FUTURE: re-enable dodge when polished
-    // if (this.checkAndTriggerDodge(player)) return;
+    if (this.checkAndTriggerDodge(player)) return;
 
     const dist = Phaser.Math.Distance.Between(this.x, this.y, player.x, player.y);
     const now = this.scene.time.now;
