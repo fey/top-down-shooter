@@ -87,6 +87,18 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
     return this.lastPathTarget;
   }
 
+  /**
+   * Invalidates the cached path so the next moveAlongPath call
+   * unconditionally recalculates. Use when the navigation target changes
+   * abruptly (e.g., switching from slot to lastKnownPos on LoS loss).
+   */
+  invalidatePath(): void {
+    this.lastPathTarget.set(-9999, -9999);
+    this.waypoints = [];
+    this.waypointIndex = 0;
+    this.stuckCheckTime = 0;
+  }
+
   takeDamage(amount: number): void {
     this.hp -= amount;
     if (this.hp <= 0) {
