@@ -52,7 +52,7 @@ export class ShooterEnemy extends Enemy {
     switch (this.state) {
       case EnemyState.IDLE:
         this.setVelocity(0, 0);
-        if (dist < ENEMY_AGGRO_RANGE) {
+        if (dist < ENEMY_AGGRO_RANGE && this.hasLoS(player)) {
           this.scene.events.emit("requestSlot", this);
           this.state = EnemyState.CHASE;
           this.scene.events.emit("packAlert", this.x, this.y);
