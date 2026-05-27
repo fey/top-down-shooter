@@ -15,8 +15,7 @@ export class PreloadScene extends Phaser.Scene {
 
     // Load all levels from the central registry — add new levels in src/level/levels.ts
     for (const { config } of LEVELS) {
-      const filename = config.key.replace("-map", "");
-      this.load.tilemapTiledJSON(config.key, `assets/maps/${filename}.json`);
+      this.load.tilemapTiledJSON(config.key, `assets/maps/${config.key}.json`);
     }
 
     // Kenney Top-Down Shooter character sprites (face east at rotation 0)
