@@ -70,15 +70,9 @@ export class ShooterEnemy extends Enemy {
       case EnemyState.SHOOT: {
         // кайтинг: держать дистанцию SHOOTER_RANGE ± буфер
         if (dist < SHOOTER_KITE_RETREAT_DIST) {
-          // игрок слишком близко — отступить через pathfinding (обходит стены)
-          const away = Phaser.Math.Angle.Between(player.x, player.y, this.x, this.y);
-          this.moveAlongPath(
-            new Phaser.Math.Vector2(
-              player.x + Math.cos(away) * SHOOTER_RANGE,
-              player.y + Math.sin(away) * SHOOTER_RANGE,
-            ),
-            SHOOTER_ENEMY_SPEED,
-          );
+          // игрок слишком близко — запросить новый слот и перепозиционироваться
+          this.scene.events.emit("requestSlot", this);
+          this.state = EnemyState.CHASE;
         } else if (dist > SHOOTER_KITE_ADVANCE_DIST) {
           // игрок слишком далеко — сблизиться через pathfinding (обходит стены)
           this.moveAlongPath(this.getSlotPos(player), SHOOTER_ENEMY_SPEED);
