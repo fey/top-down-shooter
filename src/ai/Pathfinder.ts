@@ -133,6 +133,11 @@ export class Pathfinder {
    * DDA line-of-sight check on the precomputed grid.
    * Takes world-space coordinates; returns false if any intermediate
    * grid cell along the line is blocked.
+   *
+   * NOTE: The destination cell (endpoint) is NOT checked by this method —
+   * only intermediate cells are examined. This is safe in the `smoothPath`
+   * context because A* guarantees that path endpoints are walkable. However,
+   * callers reusing this method elsewhere should be aware of this caveat.
    */
   private gridLoS(ax: number, ay: number, bx: number, by: number): boolean {
     const c0 = Math.floor(ax / this.cellSize);

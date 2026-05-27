@@ -47,6 +47,9 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
   private stuckCheckTime = 0;
   private stuckRecoveryStage = 0; // 0=normal, 1=waypoint-skip tried
 
+  // Wall separation force accumulator (reused each frame to avoid allocation)
+  private readonly wallForceAccum = new Phaser.Math.Vector2();
+
   constructor(scene: Phaser.Scene, x: number, y: number, texture: string, hp: number) {
     super(scene, x, y, texture);
     scene.add.existing(this);
@@ -176,7 +179,7 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
   private getWallSeparationForce(): Phaser.Math.Vector2 {
     if (!this.pathfinder) return new Phaser.Math.Vector2(0, 0);
 
-    const force = new Phaser.Math.Vector2(0, 0);
+    this.wallForceAccum.set(0, 0);
     const sampleDist = PATH_CELL_SIZE;
 
     for (let i = 0; i < 8; i++) {
@@ -193,15 +196,15 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
         const dy = this.y - cellCy;
         const dist = Math.max(1, Math.sqrt(dx * dx + dy * dy));
         // Repulsion: direction from cell toward enemy, weighted by 1/dist
-        force.x += (dx / dist) * (1 / dist);
-        force.y += (dy / dist) * (1 / dist);
+        this.wallForceAccum.x += (dx / dist) * (1 / dist);
+        this.wallForceAccum.y += (dy / dist) * (1 / dist);
       }
     }
 
-    if (force.lengthSq() > 0) {
-      force.normalize().scale(WALL_SEPARATION_STRENGTH);
+    if (this.wallForceAccum.lengthSq() > 0) {
+      this.wallForceAccum.normalize().scale(WALL_SEPARATION_STRENGTH);
     }
-    return force;
+    return new Phaser.Math.Vector2(this.wallForceAccum.x, this.wallForceAccum.y);
   }
 
   private recalcPath(target: Phaser.Math.Vector2): void {
