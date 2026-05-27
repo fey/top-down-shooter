@@ -9,5 +9,5 @@ export const level2: LevelData = {
     { x: 16, y: MAP_HEIGHT / 2, w: 32, h: MAP_HEIGHT },
     { x: MAP_WIDTH - 16, y: MAP_HEIGHT / 2, w: 32, h: MAP_HEIGHT },
   ],
-  enemySpawns: [],
+  enemySpawns: [{ type: "melee", x: 960, y: 540 }],
 };
