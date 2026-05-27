@@ -159,11 +159,21 @@ export class Pathfinder {
         if (!this.isWalkable(c, r)) return false;
       }
       const e2 = 2 * err;
-      if (e2 > -dr) {
+      const stepCol = e2 > -dr;
+      const stepRow = e2 < dc;
+      // When DDA steps diagonally, also check both cardinal neighbours —
+      // same corner-cutting prevention as A*. Without this, smoothPath
+      // creates diagonal shortcuts through 1-cell-wide corridor corners
+      // that the enemy's physical body cannot actually pass through.
+      if (stepCol && stepRow) {
+        if (!this.isWalkable(c + sc, r)) return false;
+        if (!this.isWalkable(c, r + sr)) return false;
+      }
+      if (stepCol) {
         err -= dr;
         c += sc;
       }
-      if (e2 < dc) {
+      if (stepRow) {
         err += dc;
         r += sr;
       }

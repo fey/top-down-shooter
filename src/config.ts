@@ -37,4 +37,4 @@ export const WAYPOINT_REACH_DIST = 24;
 export const STUCK_TIME_MS = 350; // мс без движения → враг считается застрявшим
 export const STUCK_MOVE_THRESHOLD = 6; // пикселей — меньше этого = не двигался
 export const PATH_SMOOTH_ENABLED = true;
-export const WALL_SEPARATION_STRENGTH = 80;
+export const WALL_SEPARATION_STRENGTH = 50;
