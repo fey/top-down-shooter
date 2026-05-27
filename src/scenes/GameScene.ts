@@ -8,6 +8,7 @@ import { type Enemy, EnemyState } from "../entities/Enemy";
 import { MeleeEnemy } from "../entities/MeleeEnemy";
 import { Player } from "../entities/Player";
 import { ShooterEnemy } from "../entities/ShooterEnemy";
+import type { LevelConfig } from "../level/levels";
 import type { WallDef } from "../types";
 import { GAME_OVER_SCENE_KEY } from "./GameOverScene";
 import { LEVEL_SELECT_SCENE_KEY } from "./LevelSelectScene";
@@ -17,9 +18,7 @@ const DEBUG_SHOOTER_COLOR = 0x4444ff;
 const DEBUG_SLOT_COLOR = 0xffff00;
 
 export const GAME_SCENE_KEY = "Game";
-
-/** Key of a Tiled JSON tilemap previously loaded in PreloadScene. */
-export type LevelConfig = { key: string };
+export type { LevelConfig };
 
 /** Extract WallDef[] from a Tiled wall layer for LoS checks and pathfinding. */
 function extractWallsFromLayer(wallLayer: Phaser.Tilemaps.TilemapLayer): WallDef[] {

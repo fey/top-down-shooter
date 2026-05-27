@@ -1,13 +1,10 @@
 import Phaser from "phaser";
-import { GAME_SCENE_KEY, type LevelConfig } from "./GameScene";
+import { LEVELS } from "../level/levels";
+import { GAME_SCENE_KEY } from "./GameScene";
 
 export const LEVEL_SELECT_SCENE_KEY = "LevelSelect";
 
-// Add new levels here after creating them in Tiled and registering in PreloadScene.
-// See docs/how-to-add-level.md for step-by-step instructions.
-const LEVELS: Array<{ label: string; config: LevelConfig }> = [
-  { label: "1 — Уровень 1", config: { key: "level1-map" } },
-];
+// To add a new level — edit src/level/levels.ts only. No changes here needed.
 
 export class LevelSelectScene extends Phaser.Scene {
   constructor() {

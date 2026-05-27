@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { LEVELS } from "../level/levels";
 import { LEVEL_SELECT_SCENE_KEY } from "./LevelSelectScene";
 
 export const PRELOAD_SCENE_KEY = "Preload";
@@ -12,8 +13,11 @@ export class PreloadScene extends Phaser.Scene {
     // Kenney Top-Down Shooter tilesheet (64×64 tiles, 27 columns × 20 rows)
     this.load.image("tiles-kenney", "assets/tiles/tilesheet_complete.png");
 
-    // Level 1 Tiled map (user creates this in Tiled and exports as JSON)
-    this.load.tilemapTiledJSON("level1-map", "assets/maps/level1.json");
+    // Load all levels from the central registry — add new levels in src/level/levels.ts
+    for (const { config } of LEVELS) {
+      const filename = config.key.replace("-map", "");
+      this.load.tilemapTiledJSON(config.key, `assets/maps/${filename}.json`);
+    }
 
     // Kenney Top-Down Shooter character sprites (face east at rotation 0)
     this.load.image("player", "assets/sprites/player.png");
