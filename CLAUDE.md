@@ -55,12 +55,13 @@ bd close <id>         # Complete work
 
 ## Project Overview
 
-Small browser top-down shooter: one static map, two weapons, two enemy types.
-Built milestone-by-milestone (M1–M9) as defined in `docs/roadmap.md` — read it before touching anything.
+Small browser top-down shooter: one static map, two enemy types, work in progress.
+- **Current state** (architecture, balance, what's implemented): `docs/spec.md` — read this first.
+- **Remaining work** (milestones M6–M9): `docs/roadmap.md`.
 
 ## Stack
 
-- **Phaser 3** (2D game engine).
+- **Phaser 4** (4.1.0, 2D game engine).
 - **TypeScript** in strict mode.
 - **Vite** for dev server and bundling.
 - **Biome** for lint + format (replaces ESLint + Prettier) — single `biome.json`.
@@ -82,32 +83,33 @@ No automated tests — verification is manual (open dev server, exercise the beh
 
 ## Architecture Overview
 
-The big-picture shape (see `docs/roadmap.md` for full details):
+The big-picture shape (full details in `docs/spec.md`):
 
-- **Scenes** (`src/scenes/`) are the Phaser top-level state machine: `Boot → Preload → MainMenu → Game → GameOver`, with `HUDScene` running as an overlay on top of `Game`. The HUD communicates with `GameScene` only through `scene.events.emit(...)` events (`hpChanged`, `ammoChanged`, etc.) — do not reach into `GameScene` directly from the HUD.
-- **GameScene** is the integration hub: it owns the player, enemy groups, wall (static physics) group, pickups, and two bullet groups (player bullets vs. enemy bullets). All collision wiring lives here.
-- **Entities** (`src/entities/`) are thin Phaser sprite subclasses with an Arcade Physics body. Each owns its own AI/behavior tick. Enemies share a base `Enemy` class; concrete subtypes (`MeleeEnemy`, `ShooterEnemy`) differ only in their AI.
-- **Weapons** (`src/weapons/`) are separate from entities: each weapon encapsulates cooldown, ammo, and bullet spawning. The player delegates firing to its currently equipped `Weapon`. New weapons = new `Weapon` subclass, no changes elsewhere.
-- **Level data** (`src/level/level1.ts`) is plain data — arrays of walls, enemy spawns, pickups, and a start position. `GameScene` reads this on init. To change the level, edit data, not code.
-- **Tuning numbers** (HP, speed, damage, cooldowns, ranges) live in `src/config.ts`. When balancing feels off, this is the only file you should be editing.
+- **Scenes** (`src/scenes/`) — current flow: `Boot → Preload → LevelSelect → Game → GameOver`. HUD and MainMenu are not yet implemented (planned in M8). When implemented, HUD will communicate with `GameScene` only through `scene.events.emit(...)` events — do not reach into `GameScene` directly from the HUD.
+- **GameScene** is the integration hub: it owns the player, enemy groups, wall (static physics) group, and two bullet groups (player bullets vs. enemy bullets). All collision wiring lives here.
+- **Entities** (`src/entities/`) are Phaser sprite subclasses with an Arcade Physics body. Each owns its own AI/behavior tick. `Enemy` base class has a full state machine (IDLE/CHASE/ATTACK/SHOOT/SEARCH/DODGE), A* pathfinding, slot-based positioning, dodge mechanic, and pack alerts. `MeleeEnemy` and `ShooterEnemy` are concrete subtypes.
+- **AI** (`src/ai/`) — `Pathfinder` (A* on 64 px grid) and `SlotCoordinator` (8 flanking slots around the player). These are shared by both enemy types.
+- **Weapons** (`src/weapons/`) encapsulate cooldown and bullet spawning. Currently only `Pistol`. New weapons = new `Weapon` subclass, no changes elsewhere.
+- **Level data** (`src/level/levelN.ts`) is plain data — walls, enemy spawns, pickups (reserved), and a start position. `GameScene` reads this on init. To change the level, edit data, not code.
+- **Tuning numbers** (HP, speed, damage, cooldowns, ranges, AI thresholds) live in `src/config.ts`. When balancing feels off, this is the only file you should be editing.
 
 Two bullet groups (player vs. enemy) is intentional — keeps collision rules simple and avoids friendly-fire checks.
 
 ## Conventions & Patterns
 
-- **Work milestone-by-milestone.** Each `Mx` in `docs/roadmap.md` is a separate commit/PR and must leave the game runnable and verifiable in the browser. Do not stack changes across milestones in one commit.
+- **Work milestone-by-milestone.** Each remaining `Mx` in `docs/roadmap.md` is a separate commit/PR and must leave the game runnable and verifiable in the browser. Do not stack changes across milestones in one commit.
 - **Strict TypeScript.** No `any`, no `// @ts-ignore` without a comment explaining why.
 - **Biome is the only linter/formatter.** Don't add ESLint or Prettier; don't fight Biome's defaults.
 - **Numbers in `config.ts`, data in `level1.ts`.** Don't hardcode tuning constants or level layout inside scenes or entities.
 - **Scene communication via events.** HUD and other overlay scenes subscribe to `scene.events` from `GameScene`; don't grab the other scene's instance.
 - **Scene keys co-located with scenes.** Each scene file exports its own key constant (`BOOT_SCENE_KEY`, etc.). Import the target scene's key when calling `scene.start()`.
-- **Out of scope for the prototype** (see roadmap): saves/progression, audio, multiple levels, pathfinding, mobile/gamepad controls, sprite animations beyond static Kenney art. Don't add these without explicit scope change.
+- **Out of scope for the prototype** (see roadmap): saves/progression, audio, multiple levels, mobile/gamepad controls, sprite animations beyond static Kenney art. Don't add these without explicit scope change.
 
 ## Communication Style
 
 When explaining code, architecture, or game mechanics — cover the **why**, not just the what:
 - Explain the reason behind a design decision (e.g. why two bullet groups instead of one).
-- Connect Phaser 3 concepts to concrete game behavior (e.g. what Arcade Physics body means in practice).
+- Connect Phaser 4 concepts to concrete game behavior (e.g. what Arcade Physics body means in practice).
 - When touching `config.ts`, mention which gameplay feel the numbers affect.
 - Keep it concise — one paragraph of context beats a bullet list of facts.
 
