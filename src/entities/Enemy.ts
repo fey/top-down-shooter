@@ -113,6 +113,11 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
+  // Subclasses override to conditionally block dodge (e.g. no LoS)
+  protected canDodge(_player: Player): boolean {
+    return true;
+  }
+
   // Returns true while in DODGE — caller skips its own tick logic
   checkAndTriggerDodge(player: Player): boolean {
     const now = this.scene.time.now;
@@ -128,6 +133,7 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
 
     if (this.state === EnemyState.IDLE) return false;
     if (now - this.lastDodgeTime < DODGE_COOLDOWN) return false;
+    if (!this.canDodge(player)) return false;
 
     const aimAngle = player.rotation - Math.PI / 2;
     const angleToEnemy = Phaser.Math.Angle.Between(player.x, player.y, this.x, this.y);
