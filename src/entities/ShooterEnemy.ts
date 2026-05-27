@@ -23,6 +23,7 @@ export class ShooterEnemy extends Enemy {
   private strafeFlipTime = 0;
   private readonly lastKnownPos = new Phaser.Math.Vector2(-9999, -9999);
   private hasSeenPlayer = false;
+  private losCache = false;
 
   constructor(
     scene: Phaser.Scene,
@@ -40,12 +41,12 @@ export class ShooterEnemy extends Enemy {
   }
 
   tick(player: Player): void {
-    if (this.checkAndTriggerDodge(player)) return;
-
-    if (this.hasLoS(player)) {
+    this.losCache = this.hasLoS(player);
+    if (this.losCache) {
       this.lastKnownPos.set(player.x, player.y);
       this.hasSeenPlayer = true;
     }
+    if (this.checkAndTriggerDodge(player)) return;
 
     const dist = Phaser.Math.Distance.Between(this.x, this.y, player.x, player.y);
     const now = this.scene.time.now;
@@ -53,7 +54,7 @@ export class ShooterEnemy extends Enemy {
     switch (this.state) {
       case EnemyState.IDLE:
         this.setVelocity(0, 0);
-        if (dist < ENEMY_AGGRO_RANGE && this.hasLoS(player)) {
+        if (dist < ENEMY_AGGRO_RANGE && this.losCache) {
           this.scene.events.emit("requestSlot", this);
           this.state = EnemyState.CHASE;
           this.scene.events.emit("packAlert", this.x, this.y);
@@ -61,13 +62,13 @@ export class ShooterEnemy extends Enemy {
         break;
 
       case EnemyState.CHASE: {
-        if (this.hasSeenPlayer && !this.hasLoS(player)) {
+        if (this.hasSeenPlayer && !this.losCache) {
           this.state = EnemyState.SEARCH;
           break;
         }
         const target = this.getSlotPos(player);
         this.moveAlongPath(target, SHOOTER_ENEMY_SPEED);
-        if (dist <= SHOOTER_RANGE && this.hasLoS(player)) {
+        if (dist <= SHOOTER_RANGE && this.losCache) {
           this.state = EnemyState.SHOOT;
         }
         break;
@@ -75,7 +76,7 @@ export class ShooterEnemy extends Enemy {
 
       case EnemyState.SHOOT: {
         // нет LoS — сразу уходим в поиск, движение не применяем
-        if (!this.hasLoS(player)) {
+        if (!this.losCache) {
           this.state = EnemyState.SEARCH;
           break;
         }
@@ -107,7 +108,7 @@ export class ShooterEnemy extends Enemy {
       //   break;
 
       case EnemyState.SEARCH: {
-        if (this.hasLoS(player)) {
+        if (this.losCache) {
           this.state = EnemyState.CHASE;
           break;
         }
@@ -124,6 +125,10 @@ export class ShooterEnemy extends Enemy {
       default:
         break;
     }
+  }
+
+  protected override canDodge(_player: Player): boolean {
+    return this.losCache;
   }
 
   // biome-ignore lint/correctness/noUnusedPrivateClassMembers: FUTURE re-enable strafe
