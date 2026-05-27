@@ -23,7 +23,7 @@ export class ShooterEnemy extends Enemy {
   private strafeFlipTime = 0;
   private readonly lastKnownPos = new Phaser.Math.Vector2(-9999, -9999);
   private hasSeenPlayer = false;
-  private losCache = false;
+  private losCache = false; // refreshed at the top of every tick()
 
   constructor(
     scene: Phaser.Scene,
@@ -128,6 +128,7 @@ export class ShooterEnemy extends Enemy {
   }
 
   protected override canDodge(_player: Player): boolean {
+    // LoS already computed in tick(); player arg not needed here
     return this.losCache;
   }
 
