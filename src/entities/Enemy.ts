@@ -17,6 +17,7 @@ export enum EnemyState {
   SHOOT = "SHOOT",
   STRAFE = "STRAFE",
   DODGE = "DODGE",
+  SEARCH = "SEARCH",
 }
 
 export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
