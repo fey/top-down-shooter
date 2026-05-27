@@ -88,6 +88,10 @@ export class MeleeEnemy extends Enemy {
     }
   }
 
+  protected override canDodge(_player: Player): boolean {
+    return this.losCache;
+  }
+
   tryAttack(player: Player): void {
     const now = this.scene.time.now;
     if (now - this.lastAttackTime >= MELEE_ENEMY_ATTACK_COOLDOWN) {
