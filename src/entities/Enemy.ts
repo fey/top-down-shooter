@@ -28,6 +28,7 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
   flankRadius = 0;
   protected baseSpeed = 0;
   protected pathfinder: Pathfinder | null = null;
+  protected wallGroup: Phaser.Physics.Arcade.StaticGroup | null = null;
 
   private lastDodgeTime = 0;
   private dodgeEndTime = 0;
@@ -46,6 +47,23 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
 
   setPathfinder(pf: Pathfinder): void {
     this.pathfinder = pf;
+  }
+
+  setWallGroup(wg: Phaser.Physics.Arcade.StaticGroup): void {
+    this.wallGroup = wg;
+  }
+
+  protected hasLoS(player: Player): boolean {
+    if (this.wallGroup === null) return true;
+    const line = new Phaser.Geom.Line(this.x, this.y, player.x, player.y);
+    for (const wall of this.wallGroup.getChildren()) {
+      const bounds = (
+        wall as Phaser.GameObjects.Components.Size &
+          Phaser.GameObjects.GameObject & { getBounds(): Phaser.Geom.Rectangle }
+      ).getBounds();
+      if (Phaser.Geom.Intersects.LineToRectangle(line, bounds)) return false;
+    }
+    return true;
   }
 
   getWaypoints(): Phaser.Math.Vector2[] {

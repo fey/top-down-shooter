@@ -14,11 +14,17 @@ import type { Player } from "./Player";
 export class MeleeEnemy extends Enemy {
   private lastAttackTime = 0;
 
-  constructor(scene: Phaser.Scene, x: number, y: number) {
+  constructor(
+    scene: Phaser.Scene,
+    x: number,
+    y: number,
+    wallGroup: Phaser.Physics.Arcade.StaticGroup,
+  ) {
     super(scene, x, y, "enemy_melee", MELEE_ENEMY_HP);
     this.setTint(0xff4444);
     this.baseSpeed = MELEE_ENEMY_SPEED;
     this.flankRadius = MELEE_SLOT_RADIUS;
+    this.setWallGroup(wallGroup);
   }
 
   tick(player: Player): void {
@@ -29,7 +35,7 @@ export class MeleeEnemy extends Enemy {
     switch (this.state) {
       case EnemyState.IDLE:
         this.setVelocity(0, 0);
-        if (dist < ENEMY_AGGRO_RANGE) {
+        if (dist < ENEMY_AGGRO_RANGE && this.hasLoS(player)) {
           this.scene.events.emit("requestSlot", this);
           this.state = EnemyState.CHASE;
           this.scene.events.emit("packAlert", this.x, this.y);

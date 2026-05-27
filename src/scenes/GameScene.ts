@@ -197,7 +197,7 @@ export class GameScene extends Phaser.Scene {
     for (const spawn of data.enemySpawns) {
       let enemy: MeleeEnemy | ShooterEnemy;
       if (spawn.type === "melee") {
-        enemy = new MeleeEnemy(this, spawn.x, spawn.y);
+        enemy = new MeleeEnemy(this, spawn.x, spawn.y, this.wallGroup);
       } else {
         enemy = new ShooterEnemy(this, spawn.x, spawn.y, this.enemyBullets, this.wallGroup);
       }

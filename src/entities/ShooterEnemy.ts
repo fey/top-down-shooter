@@ -18,7 +18,6 @@ import type { Player } from "./Player";
 export class ShooterEnemy extends Enemy {
   private lastFiredAt = 0;
   private readonly enemyBullets: Phaser.Physics.Arcade.Group;
-  private readonly wallGroup: Phaser.Physics.Arcade.StaticGroup;
   private strafeSign = 1;
   private strafeFlipTime = 0;
   private readonly lastKnownPos = new Phaser.Math.Vector2(-9999, -9999);
@@ -36,7 +35,7 @@ export class ShooterEnemy extends Enemy {
     this.baseSpeed = SHOOTER_ENEMY_SPEED;
     this.flankRadius = SHOOTER_RANGE;
     this.enemyBullets = enemyBullets;
-    this.wallGroup = wallGroup;
+    this.setWallGroup(wallGroup);
   }
 
   tick(player: Player): void {
@@ -147,18 +146,6 @@ export class ShooterEnemy extends Enemy {
       Math.cos(perpAngle) * SHOOTER_ENEMY_SPEED,
       Math.sin(perpAngle) * SHOOTER_ENEMY_SPEED,
     );
-  }
-
-  private hasLoS(player: Player): boolean {
-    const line = new Phaser.Geom.Line(this.x, this.y, player.x, player.y);
-    for (const wall of this.wallGroup.getChildren()) {
-      const bounds = (
-        wall as Phaser.GameObjects.Components.Size &
-          Phaser.GameObjects.GameObject & { getBounds(): Phaser.Geom.Rectangle }
-      ).getBounds();
-      if (Phaser.Geom.Intersects.LineToRectangle(line, bounds)) return false;
-    }
-    return true;
   }
 
   private spawnBullet(angle: number): void {
