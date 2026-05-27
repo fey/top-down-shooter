@@ -1,7 +1,15 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.4.15/schema.json",
   "files": {
-    "includes": ["**", "!**/dist", "!**/node_modules", "!**/.beads", "!**/docs"]
+    "includes": [
+      "**",
+      "!**/dist",
+      "!**/node_modules",
+      "!**/.beads",
+      "!**/docs",
+      "!**/*.tsx",
+      "!**/public/assets/maps"
+    ]
   },
   "formatter": {
     "enabled": true,

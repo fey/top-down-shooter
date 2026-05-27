@@ -248,15 +248,18 @@ export class GameScene extends Phaser.Scene {
     for (const obj of spawnObjects) {
       const ox = obj.x ?? 100;
       const oy = obj.y ?? 100;
+      // Tiled stores the identifier in "type" (class) OR "name" depending on workflow.
+      // Support both: fall back to name when type is empty.
+      const spawnId = obj.type || obj.name;
 
-      if (obj.type === "player_start") {
+      if (spawnId === "player_start") {
         this.player = new Player(this, ox, oy, this.playerBullets);
         playerCreated = true;
-      } else if (obj.type === "melee") {
+      } else if (spawnId === "melee") {
         const e = new MeleeEnemy(this, ox, oy, walls);
         e.setPathfinder(this.pathfinder);
         this.enemyGroup.add(e);
-      } else if (obj.type === "shooter") {
+      } else if (spawnId === "shooter") {
         const e = new ShooterEnemy(this, ox, oy, this.enemyBullets, walls);
         e.setPathfinder(this.pathfinder);
         this.enemyGroup.add(e);
