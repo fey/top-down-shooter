@@ -90,9 +90,10 @@ export class ShooterEnemy extends Enemy {
           this.spawnBullet(Phaser.Math.Angle.Between(this.x, this.y, player.x, player.y));
           this.lastFiredAt = now;
         }
-        // FUTURE: re-enable strafe when polished
-        // if (!this.hasLoS(player)) this.enterStrafe(now);
-        if (!this.hasLoS(player)) this.state = EnemyState.CHASE;
+        if (!this.hasLoS(player)) {
+          this.state = EnemyState.SEARCH;
+          break;
+        }
         if (dist > SHOOTER_RANGE) this.state = EnemyState.CHASE;
         break;
       }
