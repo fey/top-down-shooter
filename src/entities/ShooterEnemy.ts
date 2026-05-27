@@ -76,7 +76,7 @@ export class ShooterEnemy extends Enemy {
           // игрок слишком далеко — сблизиться через pathfinding (обходит стены)
           this.moveAlongPath(this.getSlotPos(player), SHOOTER_ENEMY_SPEED);
         } else {
-          this.setVelocity(0, 0);
+          this.applyStrafe(player, now); // непрерывное боковое движение
         }
         // стрельба не зависит от движения
         if (now - this.lastFiredAt >= SHOOTER_ENEMY_FIRE_COOLDOWN && this.hasLoS(player)) {
@@ -109,7 +109,6 @@ export class ShooterEnemy extends Enemy {
     this.strafeFlipTime = now + 1000;
   }
 
-  // biome-ignore lint/correctness/noUnusedPrivateClassMembers: FUTURE re-enable strafe
   private applyStrafe(player: Player, now: number): void {
     if (now >= this.strafeFlipTime) {
       this.strafeSign *= -1;
