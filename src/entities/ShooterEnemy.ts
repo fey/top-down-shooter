@@ -20,6 +20,8 @@ export class ShooterEnemy extends Enemy {
   private readonly wallGroup: Phaser.Physics.Arcade.StaticGroup;
   private strafeSign = 1;
   private strafeFlipTime = 0;
+  private readonly lastKnownPos = new Phaser.Math.Vector2(-9999, -9999);
+  private hasSeenPlayer = false;
 
   constructor(
     scene: Phaser.Scene,
@@ -38,6 +40,11 @@ export class ShooterEnemy extends Enemy {
 
   tick(player: Player): void {
     if (this.checkAndTriggerDodge(player)) return;
+
+    if (this.hasLoS(player)) {
+      this.lastKnownPos.set(player.x, player.y);
+      this.hasSeenPlayer = true;
+    }
 
     const dist = Phaser.Math.Distance.Between(this.x, this.y, player.x, player.y);
     const now = this.scene.time.now;
