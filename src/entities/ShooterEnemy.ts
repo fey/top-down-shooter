@@ -60,7 +60,11 @@ export class ShooterEnemy extends Enemy {
         break;
 
       case EnemyState.CHASE: {
-        const target = this.getSlotPos(player);
+        // Без LoS — идти прямо к игроку (pathfinding обогнёт стену)
+        // С LoS — идти к слот-позиции (правильная дистанция для стрельбы)
+        const target = this.losCache
+          ? this.getSlotPos(player)
+          : new Phaser.Math.Vector2(player.x, player.y);
         this.moveAlongPath(target, SHOOTER_ENEMY_SPEED);
         if (dist <= SHOOTER_RANGE && this.losCache) {
           this.state = EnemyState.SHOOT;
