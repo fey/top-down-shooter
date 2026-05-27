@@ -171,15 +171,17 @@ export class GameScene extends Phaser.Scene {
         this.pathGraphics.strokePath();
       }
 
-      const slot = enemy.getSlotPos(this.player);
-      const cross = 8;
-      this.pathGraphics.lineStyle(2, DEBUG_SLOT_COLOR, 0.9);
-      this.pathGraphics.beginPath();
-      this.pathGraphics.moveTo(slot.x - cross, slot.y);
-      this.pathGraphics.lineTo(slot.x + cross, slot.y);
-      this.pathGraphics.moveTo(slot.x, slot.y - cross);
-      this.pathGraphics.lineTo(slot.x, slot.y + cross);
-      this.pathGraphics.strokePath();
+      const target = enemy.getLastPathTarget();
+      if (target) {
+        const cross = 8;
+        this.pathGraphics.lineStyle(2, DEBUG_SLOT_COLOR, 0.9);
+        this.pathGraphics.beginPath();
+        this.pathGraphics.moveTo(target.x - cross, target.y);
+        this.pathGraphics.lineTo(target.x + cross, target.y);
+        this.pathGraphics.moveTo(target.x, target.y - cross);
+        this.pathGraphics.lineTo(target.x, target.y + cross);
+        this.pathGraphics.strokePath();
+      }
     }
   }
 

@@ -51,6 +51,11 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
     return this.waypoints;
   }
 
+  getLastPathTarget(): Phaser.Math.Vector2 | null {
+    if (this.lastPathTarget.x === -9999 && this.lastPathTarget.y === -9999) return null;
+    return this.lastPathTarget;
+  }
+
   takeDamage(amount: number): void {
     this.hp -= amount;
     if (this.hp <= 0) {
