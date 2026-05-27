@@ -6,6 +6,7 @@ import {
   MELEE_ENEMY_DAMAGE,
   MELEE_ENEMY_HP,
   MELEE_ENEMY_SPEED,
+  MELEE_SEARCH_TIMEOUT,
   MELEE_SLOT_RADIUS,
   WAYPOINT_REACH_DIST,
 } from "../config";
@@ -15,6 +16,8 @@ import type { Player } from "./Player";
 export class MeleeEnemy extends Enemy {
   private lastAttackTime = 0;
   private losCache = false;
+  private prevLosCache = false;
+  private searchEnteredTime = 0;
   private readonly lastKnownPos = new Phaser.Math.Vector2(-9999, -9999);
 
   constructor(
@@ -31,6 +34,7 @@ export class MeleeEnemy extends Enemy {
   }
 
   tick(player: Player): void {
+    this.prevLosCache = this.losCache;
     this.losCache = this.hasLoS(player);
     if (this.losCache) {
       this.lastKnownPos.set(player.x, player.y);
@@ -50,28 +54,40 @@ export class MeleeEnemy extends Enemy {
         break;
 
       case EnemyState.CHASE: {
-        if (!this.losCache) {
-          // Если никогда не видели (packAlert без LoS) — взять текущую позицию как fallback
+        if (this.losCache) {
+          // Есть прямая видимость — идём к слоту (флангирующая позиция)
+          this.moveAlongPath(this.getSlotPos(player), MELEE_ENEMY_SPEED);
+          if (dist < MELEE_ATTACK_RANGE) this.state = EnemyState.ATTACK;
+        } else {
+          // LoS потерян — идём к последней известной позиции игрока
           if (this.lastKnownPos.x === -9999) {
+            // Агро пришло через packAlert — брать текущую позицию как fallback
             this.lastKnownPos.set(player.x, player.y);
           }
-          this.state = EnemyState.SEARCH;
-          break;
+          // При только что потерянном LoS — принудительно пересчитать путь,
+          // чтобы не использовать устаревший маршрут к слоту
+          if (this.prevLosCache) {
+            this.invalidatePath();
+          }
+          this.moveAlongPath(this.lastKnownPos, MELEE_ENEMY_SPEED);
+          // Переходим в SEARCH только когда физически добрались до lastKnownPos
+          const distToLkp = Phaser.Math.Distance.BetweenPoints(this, this.lastKnownPos);
+          if (distToLkp < WAYPOINT_REACH_DIST) {
+            this.searchEnteredTime = this.scene.time.now;
+            this.state = EnemyState.SEARCH;
+          }
         }
-        this.moveAlongPath(this.getSlotPos(player), MELEE_ENEMY_SPEED);
-        if (dist < MELEE_ATTACK_RANGE) this.state = EnemyState.ATTACK;
         break;
       }
 
       case EnemyState.SEARCH: {
+        // Добрались до lastKnownPos, но игрока не видим — ждём и смотрим
         if (this.losCache) {
           this.state = EnemyState.CHASE;
           break;
         }
-        this.moveAlongPath(this.lastKnownPos, MELEE_ENEMY_SPEED);
-        const distToLkp = Phaser.Math.Distance.BetweenPoints(this, this.lastKnownPos);
-        if (distToLkp < WAYPOINT_REACH_DIST) {
-          this.setVelocity(0, 0);
+        this.setVelocity(0, 0);
+        if (this.scene.time.now - this.searchEnteredTime >= MELEE_SEARCH_TIMEOUT) {
           this.state = EnemyState.IDLE;
         }
         break;
