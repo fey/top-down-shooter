@@ -88,6 +88,7 @@ export class MeleeEnemy extends Enemy {
         }
         this.setVelocity(0, 0);
         if (this.scene.time.now - this.searchEnteredTime >= MELEE_SEARCH_TIMEOUT) {
+          this.scene.events.emit("releaseSlot", this);
           this.state = EnemyState.IDLE;
         }
         break;

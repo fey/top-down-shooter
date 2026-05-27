@@ -115,6 +115,10 @@ export class GameScene extends Phaser.Scene {
       this.coordinator.releaseSlot(e);
     });
 
+    this.events.on("releaseSlot", (e: Enemy) => {
+      this.coordinator.releaseSlot(e);
+    });
+
     this.cameras.main.startFollow(this.player);
     this.cameras.main.setBounds(0, 0, w, h);
 
