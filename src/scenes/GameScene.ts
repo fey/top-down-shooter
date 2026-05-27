@@ -47,14 +47,16 @@ export class GameScene extends Phaser.Scene {
 
   create(): void {
     this.cameras.main.setBackgroundColor("#1a1a1a");
-    this.physics.world.setBounds(0, 0, MAP_WIDTH, MAP_HEIGHT);
+    const w = this.levelData.width ?? MAP_WIDTH;
+    const h = this.levelData.height ?? MAP_HEIGHT;
+    this.physics.world.setBounds(0, 0, w, h);
 
     this.wallGroup = this.physics.add.staticGroup();
     this.playerBullets = this.physics.add.group({ classType: Bullet, runChildUpdate: true });
     this.enemyBullets = this.physics.add.group({ classType: Bullet, runChildUpdate: true });
     this.enemyGroup = this.physics.add.group();
     this.coordinator = new SlotCoordinator();
-    this.pathfinder = new Pathfinder(this.levelData.walls, MAP_WIDTH, MAP_HEIGHT);
+    this.pathfinder = new Pathfinder(this.levelData.walls, w, h);
 
     this.pathGraphics = this.add.graphics().setDepth(50);
 
@@ -114,7 +116,7 @@ export class GameScene extends Phaser.Scene {
     });
 
     this.cameras.main.startFollow(this.player);
-    this.cameras.main.setBounds(0, 0, MAP_WIDTH, MAP_HEIGHT);
+    this.cameras.main.setBounds(0, 0, w, h);
 
     this.events.once("playerDied", () => {
       this.gameOver = true;

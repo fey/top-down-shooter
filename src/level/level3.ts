@@ -1,17 +1,18 @@
-import { MAP_HEIGHT, MAP_WIDTH } from "../config";
 import type { LevelData } from "./level1";
 
 export const level3: LevelData = {
-  playerStart: { x: 200, y: 540 },
+  width: 960,
+  height: 720,
+  playerStart: { x: 100, y: 360 },
   walls: [
-    { x: MAP_WIDTH / 2, y: 16, w: MAP_WIDTH, h: 32 },
-    { x: MAP_WIDTH / 2, y: MAP_HEIGHT - 16, w: MAP_WIDTH, h: 32 },
-    { x: 16, y: MAP_HEIGHT / 2, w: 32, h: MAP_HEIGHT },
-    { x: MAP_WIDTH - 16, y: MAP_HEIGHT / 2, w: 32, h: MAP_HEIGHT },
-    // Вертикальный пилон 1 — блокирует LoS при y≈540
-    { x: 700, y: 450, w: 32, h: 300 },
+    { x: 480, y: 16, w: 960, h: 32 },
+    { x: 480, y: 704, w: 960, h: 32 },
+    { x: 16, y: 360, w: 32, h: 720 },
+    { x: 944, y: 360, w: 32, h: 720 },
+    // Вертикальный пилон 1 — блокирует LoS при y≈360
+    { x: 380, y: 280, w: 32, h: 200 },
     // Вертикальный пилон 2 — дополнительное укрытие
-    { x: 1100, y: 630, w: 32, h: 300 },
+    { x: 580, y: 440, w: 32, h: 200 },
   ],
-  enemySpawns: [{ type: "shooter", x: 1600, y: 540 }],
+  enemySpawns: [{ type: "shooter", x: 850, y: 360 }],
 };

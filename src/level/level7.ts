@@ -1,25 +1,26 @@
-import { MAP_HEIGHT, MAP_WIDTH } from "../config";
 import type { LevelData } from "./level1";
 
 export const level7: LevelData = {
-  playerStart: { x: 200, y: 540 },
+  width: 960,
+  height: 720,
+  playerStart: { x: 100, y: 360 },
   walls: [
-    { x: MAP_WIDTH / 2, y: 16, w: MAP_WIDTH, h: 32 },
-    { x: MAP_WIDTH / 2, y: MAP_HEIGHT - 16, w: MAP_WIDTH, h: 32 },
-    { x: 16, y: MAP_HEIGHT / 2, w: 32, h: MAP_HEIGHT },
-    { x: MAP_WIDTH - 16, y: MAP_HEIGHT / 2, w: 32, h: MAP_HEIGHT },
+    { x: 480, y: 16, w: 960, h: 32 },
+    { x: 480, y: 704, w: 960, h: 32 },
+    { x: 16, y: 360, w: 32, h: 720 },
+    { x: 944, y: 360, w: 32, h: 720 },
     // L-образная стена (горизонтальная часть)
-    { x: 1050, y: 480, w: 500, h: 32 },
+    { x: 580, y: 300, w: 340, h: 32 },
     // L-образная стена (вертикальная часть)
-    { x: 1284, y: 640, w: 32, h: 320 },
+    { x: 734, y: 420, w: 32, h: 240 },
   ],
   enemySpawns: [
     // melee кластер — за L-стеной
-    { type: "melee", x: 800, y: 500 },
-    { type: "melee", x: 860, y: 580 },
-    { type: "melee", x: 800, y: 650 },
+    { type: "melee", x: 420, y: 360 },
+    { type: "melee", x: 460, y: 420 },
+    { type: "melee", x: 420, y: 470 },
     // shooter — с открытой видимостью на игрока
-    { type: "shooter", x: 950, y: 340 },
-    { type: "shooter", x: 1200, y: 700 },
+    { type: "shooter", x: 520, y: 220 },
+    { type: "shooter", x: 680, y: 500 },
   ],
 };

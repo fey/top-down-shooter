@@ -1,26 +1,27 @@
-import { MAP_HEIGHT, MAP_WIDTH } from "../config";
 import type { LevelData } from "./level1";
 
 export const level4: LevelData = {
-  playerStart: { x: 200, y: 540 },
+  width: 960,
+  height: 720,
+  playerStart: { x: 100, y: 360 },
   walls: [
-    { x: MAP_WIDTH / 2, y: 16, w: MAP_WIDTH, h: 32 },
-    { x: MAP_WIDTH / 2, y: MAP_HEIGHT - 16, w: MAP_WIDTH, h: 32 },
-    { x: 16, y: MAP_HEIGHT / 2, w: 32, h: MAP_HEIGHT },
-    { x: MAP_WIDTH - 16, y: MAP_HEIGHT / 2, w: 32, h: MAP_HEIGHT },
-    // Перегородка 1 (x=448): зазор сверху y=32–232
-    { x: 448, y: 640, w: 32, h: 816 },
-    // Перегородка 2 (x=832): зазор снизу y=848–1048
-    { x: 832, y: 440, w: 32, h: 816 },
-    // Перегородка 3 (x=1216): зазор сверху y=32–232
-    { x: 1216, y: 640, w: 32, h: 816 },
-    // Перегородка 4 (x=1600): зазор снизу y=848–1048
-    { x: 1600, y: 440, w: 32, h: 816 },
+    { x: 480, y: 16, w: 960, h: 32 },
+    { x: 480, y: 704, w: 960, h: 32 },
+    { x: 16, y: 360, w: 32, h: 720 },
+    { x: 944, y: 360, w: 32, h: 720 },
+    // Перегородка 1 (x=224): зазор сверху y=32–128
+    { x: 224, y: 408, w: 32, h: 560 },
+    // Перегородка 2 (x=416): зазор снизу y=592–688
+    { x: 416, y: 312, w: 32, h: 560 },
+    // Перегородка 3 (x=608): зазор сверху y=32–128
+    { x: 608, y: 408, w: 32, h: 560 },
+    // Перегородка 4 (x=800): зазор снизу y=592–688
+    { x: 800, y: 312, w: 32, h: 560 },
   ],
   enemySpawns: [
-    { type: "melee", x: 640, y: 540 },
-    { type: "melee", x: 1024, y: 540 },
-    { type: "melee", x: 1408, y: 540 },
-    { type: "melee", x: 1744, y: 540 },
+    { type: "melee", x: 320, y: 360 },
+    { type: "melee", x: 512, y: 360 },
+    { type: "melee", x: 704, y: 360 },
+    { type: "melee", x: 864, y: 360 },
   ],
 };

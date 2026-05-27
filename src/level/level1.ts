@@ -14,6 +14,8 @@ export interface EnemySpawn {
 }
 
 export interface LevelData {
+  width?: number;
+  height?: number;
   playerStart: { x: number; y: number };
   walls: WallDef[];
   enemySpawns: EnemySpawn[];
