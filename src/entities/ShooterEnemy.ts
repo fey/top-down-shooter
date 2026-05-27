@@ -9,6 +9,7 @@ import {
   SHOOTER_KITE_ADVANCE_DIST,
   SHOOTER_KITE_RETREAT_DIST,
   SHOOTER_RANGE,
+  WAYPOINT_REACH_DIST,
 } from "../config";
 import { Bullet } from "./Bullet";
 import { Enemy, EnemyState } from "./Enemy";
@@ -103,6 +104,21 @@ export class ShooterEnemy extends Enemy {
       //   if (this.hasLoS(player)) this.state = EnemyState.SHOOT;
       //   if (dist > SHOOTER_RANGE) this.state = EnemyState.CHASE;
       //   break;
+
+      case EnemyState.SEARCH: {
+        if (this.hasLoS(player)) {
+          this.state = EnemyState.CHASE;
+          break;
+        }
+        this.moveAlongPath(this.lastKnownPos, SHOOTER_ENEMY_SPEED);
+        const distToLkp = Phaser.Math.Distance.BetweenPoints(this, this.lastKnownPos);
+        if (distToLkp < WAYPOINT_REACH_DIST) {
+          this.setVelocity(0, 0);
+          this.hasSeenPlayer = false;
+          this.state = EnemyState.IDLE;
+        }
+        break;
+      }
 
       default:
         break;
