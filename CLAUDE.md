@@ -1,7 +1,7 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-AGENTS.md is a symlink to this file — they are the same document.
+Этот файл содержит инструкции для Claude Code (claude.ai/code) при работе с репозиторием.
+AGENTS.md — симлинк на этот файл; это один и тот же документ.
 
 
 <!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:7510c1e2 -->
@@ -53,20 +53,20 @@ bd close <id>         # Complete work
 <!-- END BEADS INTEGRATION -->
 
 
-## Project Overview
+## Обзор проекта
 
-Small browser top-down shooter: one static map, two enemy types, work in progress.
-- **Current state** (architecture, balance, what's implemented): `docs/spec.md` — read this first.
-- **Remaining work** (milestones M6–M9): `docs/roadmap.md`.
+Небольшой браузерный top-down шутер: одна статичная карта, два типа врагов, в процессе разработки.
+- **Текущее состояние** (архитектура, баланс, что реализовано): `docs/spec.md` — читать в первую очередь.
+- **Оставшаяся работа** (milestone M6–M9): `docs/roadmap.md`.
 
-## Stack
+## Стек
 
-- **Phaser 4** (4.1.0, 2D game engine).
-- **TypeScript** in strict mode.
-- **Vite** for dev server and bundling.
-- **Biome** for lint + format (replaces ESLint + Prettier) — single `biome.json`.
+- **Phaser 4** (4.1.0, 2D игровой движок).
+- **TypeScript** в strict-режиме.
+- **Vite** для dev-сервера и сборки.
+- **Biome** для lint + format (замена ESLint + Prettier) — единственный `biome.json`.
 
-## Build & Test
+## Сборка и проверка
 
 ```bash
 make install    # npm ci
@@ -79,30 +79,30 @@ make typecheck  # tsc --noEmit
 make clean      # rm -rf dist
 ```
 
-No automated tests — verification is manual (open dev server, exercise the behavior). Each milestone in `docs/roadmap.md` has its own **Verify** checklist.
+Автотестов нет — проверка ручная (открыть dev-сервер, воспроизвести поведение). У каждого milestone в `docs/roadmap.md` свой чеклист **Verify**.
 
-## Architecture Overview
+## Обзор архитектуры
 
-Full details in `docs/spec.md`. Enemy AI behavioral spec: `docs/superpowers/specs/2026-05-27-enemy-ai-current-design.md`.
+Полные детали — в `docs/spec.md`. Поведенческая спецификация AI врагов: `docs/superpowers/specs/2026-05-27-enemy-ai-current-design.md`.
 
-## Conventions & Patterns
+## Соглашения и паттерны
 
-- **Work milestone-by-milestone.** Each remaining `Mx` in `docs/roadmap.md` is a separate commit/PR and must leave the game runnable and verifiable in the browser. Do not stack changes across milestones in one commit.
-- **Strict TypeScript.** No `any`, no `// @ts-ignore` without a comment explaining why.
-- **Biome is the only linter/formatter.** Don't add ESLint or Prettier; don't fight Biome's defaults.
-- **Numbers in `config.ts`, data in `level1.ts`.** Don't hardcode tuning constants or level layout inside scenes or entities.
-- **Enemy AI spec.** Before modifying enemy behavior (`src/entities/Enemy.ts`, `MeleeEnemy.ts`, `ShooterEnemy.ts`, `src/ai/`), read `docs/superpowers/specs/2026-05-27-enemy-ai-current-design.md`. Changes must either match the spec or explicitly update it in the same commit.
-- **Scene communication via events.** HUD and other overlay scenes subscribe to `scene.events` from `GameScene`; don't grab the other scene's instance.
-- **Scene keys co-located with scenes.** Each scene file exports its own key constant (`BOOT_SCENE_KEY`, etc.). Import the target scene's key when calling `scene.start()`.
-- **Out of scope for the prototype** (see roadmap): saves/progression, audio, multiple levels, mobile/gamepad controls, sprite animations beyond static Kenney art. Don't add these without explicit scope change.
+- **Работать milestone за milestone.** Каждый `Mx` в `docs/roadmap.md` — отдельный commit/PR; после него игра должна запускаться и проверяться в браузере. Не смешивать изменения нескольких milestone в одном коммите.
+- **Strict TypeScript.** Без `any`, без `// @ts-ignore` без объяснения причины.
+- **Biome — единственный линтер/форматтер.** Не добавлять ESLint или Prettier; не бороться с дефолтами Biome.
+- **Числа в `config.ts`, данные в `level1.ts`.** Не хардкодить настроечные константы и раскладку уровня прямо в сценах или сущностях.
+- **Спецификация AI врагов.** Перед изменением поведения врагов (`src/entities/Enemy.ts`, `MeleeEnemy.ts`, `ShooterEnemy.ts`, `src/ai/`) прочитать `docs/superpowers/specs/2026-05-27-enemy-ai-current-design.md`. Изменения должны либо соответствовать спецификации, либо явно обновлять её в том же коммите.
+- **Сцены общаются через события.** HUD и другие оверлейные сцены подписываются на `scene.events` от `GameScene`; не получать экземпляр другой сцены напрямую.
+- **Ключи сцен хранятся рядом со сценами.** Каждый файл сцены экспортирует собственную константу-ключ (`BOOT_SCENE_KEY` и т.д.). Импортировать ключ целевой сцены при вызове `scene.start()`.
+- **За рамками прототипа** (см. roadmap): сохранения/прогресс, аудио, несколько уровней, управление с мобильного/геймпада, анимации спрайтов сверх статичного арта Kenney. Не добавлять без явного изменения скоупа.
 
-## Communication Style
+## Стиль общения
 
-When explaining code, architecture, or game mechanics — cover the **why**, not just the what:
-- Explain the reason behind a design decision (e.g. why two bullet groups instead of one).
-- Connect Phaser 4 concepts to concrete game behavior (e.g. what Arcade Physics body means in practice).
-- When touching `config.ts`, mention which gameplay feel the numbers affect.
-- Keep it concise — one paragraph of context beats a bullet list of facts.
+При объяснении кода, архитектуры или игровой механики — раскрывать **почему**, а не только что:
+- Объяснять причину архитектурного решения (например, почему две группы пуль вместо одной).
+- Связывать концепции Phaser 4 с конкретным игровым поведением (например, что такое Arcade Physics body на практике).
+- При изменении `config.ts` — упоминать, на какое игровое ощущение влияют числа.
+- Кратко — один абзац с контекстом лучше, чем список фактов.
 
 <!-- rtk-instructions v2 -->
 # RTK (Rust Token Killer) - Token-Optimized Commands
