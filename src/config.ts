@@ -19,6 +19,8 @@ export const SHOOTER_ENEMY_DAMAGE = 1;
 export const SHOOTER_ENEMY_FIRE_COOLDOWN = 1500;
 export const SHOOTER_RANGE = 350;
 export const SHOOTER_BULLET_SPEED = 400;
+export const SHOOTER_KITE_RETREAT_DIST = 262; // SHOOTER_RANGE * 0.75 — отступать ближе этого
+export const SHOOTER_KITE_ADVANCE_DIST = 402; // SHOOTER_RANGE * 1.15 — сближаться дальше этого
 
 export const ENEMY_AGGRO_RANGE = 250;
 export const PACK_ALERT_RADIUS = 300;

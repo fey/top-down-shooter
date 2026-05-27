@@ -6,6 +6,8 @@ import {
   SHOOTER_ENEMY_FIRE_COOLDOWN,
   SHOOTER_ENEMY_HP,
   SHOOTER_ENEMY_SPEED,
+  SHOOTER_KITE_ADVANCE_DIST,
+  SHOOTER_KITE_RETREAT_DIST,
   SHOOTER_RANGE,
 } from "../config";
 import { Bullet } from "./Bullet";
@@ -65,8 +67,22 @@ export class ShooterEnemy extends Enemy {
         break;
       }
 
-      case EnemyState.SHOOT:
-        this.setVelocity(0, 0);
+      case EnemyState.SHOOT: {
+        // кайтинг: держать дистанцию SHOOTER_RANGE ± буфер
+        if (dist < SHOOTER_KITE_RETREAT_DIST) {
+          // игрок слишком близко — отступить по радиальной оси
+          const away = Phaser.Math.Angle.Between(player.x, player.y, this.x, this.y);
+          this.setVelocity(
+            Math.cos(away) * SHOOTER_ENEMY_SPEED,
+            Math.sin(away) * SHOOTER_ENEMY_SPEED,
+          );
+        } else if (dist > SHOOTER_KITE_ADVANCE_DIST) {
+          // игрок слишком далеко — сблизиться через pathfinding (обходит стены)
+          this.moveAlongPath(this.getSlotPos(player), SHOOTER_ENEMY_SPEED);
+        } else {
+          this.setVelocity(0, 0);
+        }
+        // стрельба не зависит от движения
         if (now - this.lastFiredAt >= SHOOTER_ENEMY_FIRE_COOLDOWN && this.hasLoS(player)) {
           this.spawnBullet(Phaser.Math.Angle.Between(this.x, this.y, player.x, player.y));
           this.lastFiredAt = now;
@@ -76,6 +92,7 @@ export class ShooterEnemy extends Enemy {
         if (!this.hasLoS(player)) this.state = EnemyState.CHASE;
         if (dist > SHOOTER_RANGE) this.state = EnemyState.CHASE;
         break;
+      }
 
       // FUTURE: re-enable strafe state when polished
       // case EnemyState.STRAFE:
