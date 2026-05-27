@@ -83,17 +83,7 @@ No automated tests — verification is manual (open dev server, exercise the beh
 
 ## Architecture Overview
 
-The big-picture shape (full details in `docs/spec.md`):
-
-- **Scenes** (`src/scenes/`) — current flow: `Boot → Preload → LevelSelect → Game → GameOver`. HUD and MainMenu are not yet implemented (planned in M8). When implemented, HUD will communicate with `GameScene` only through `scene.events.emit(...)` events — do not reach into `GameScene` directly from the HUD.
-- **GameScene** is the integration hub: it owns the player, enemy groups, wall (static physics) group, and two bullet groups (player bullets vs. enemy bullets). All collision wiring lives here.
-- **Entities** (`src/entities/`) are Phaser sprite subclasses with an Arcade Physics body. Each owns its own AI/behavior tick. `Enemy` base class has a full state machine (IDLE/CHASE/ATTACK/SHOOT/SEARCH/DODGE), A* pathfinding, slot-based positioning, dodge mechanic, and pack alerts. `MeleeEnemy` and `ShooterEnemy` are concrete subtypes. See `docs/superpowers/specs/2026-05-27-enemy-ai-current-design.md` for the full behavioral spec.
-- **AI** (`src/ai/`) — `Pathfinder` (A* on 64 px grid) and `SlotCoordinator` (8 flanking slots around the player). These are shared by both enemy types.
-- **Weapons** (`src/weapons/`) encapsulate cooldown and bullet spawning. Currently only `Pistol`. New weapons = new `Weapon` subclass, no changes elsewhere.
-- **Level data** (`src/level/levelN.ts`) is plain data — walls, enemy spawns, pickups (reserved), and a start position. `GameScene` reads this on init. To change the level, edit data, not code.
-- **Tuning numbers** (HP, speed, damage, cooldowns, ranges, AI thresholds) live in `src/config.ts`. When balancing feels off, this is the only file you should be editing.
-
-Two bullet groups (player vs. enemy) is intentional — keeps collision rules simple and avoids friendly-fire checks.
+Full details in `docs/spec.md`. Enemy AI behavioral spec: `docs/superpowers/specs/2026-05-27-enemy-ai-current-design.md`.
 
 ## Conventions & Patterns
 
