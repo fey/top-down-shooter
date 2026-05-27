@@ -8,7 +8,6 @@ import { type Enemy, EnemyState } from "../entities/Enemy";
 import { MeleeEnemy } from "../entities/MeleeEnemy";
 import { Player } from "../entities/Player";
 import { ShooterEnemy } from "../entities/ShooterEnemy";
-import type { LevelData } from "../level/level1";
 import type { WallDef } from "../types";
 import { GAME_OVER_SCENE_KEY } from "./GameOverScene";
 import { LEVEL_SELECT_SCENE_KEY } from "./LevelSelectScene";
@@ -17,12 +16,10 @@ const DEBUG_MELEE_COLOR = 0xff4444;
 const DEBUG_SHOOTER_COLOR = 0x4444ff;
 const DEBUG_SLOT_COLOR = 0xffff00;
 
-const WALL_COLOR = 0x555566;
-
 export const GAME_SCENE_KEY = "Game";
 
-/** Determines how the scene loads its map and spawns. */
-export type LevelConfig = { mode: "tilemap"; key: string } | { mode: "data"; data: LevelData };
+/** Key of a Tiled JSON tilemap previously loaded in PreloadScene. */
+export type LevelConfig = { key: string };
 
 /** Extract WallDef[] from a Tiled wall layer for LoS checks and pathfinding. */
 function extractWallsFromLayer(wallLayer: Phaser.Tilemaps.TilemapLayer): WallDef[] {
@@ -51,14 +48,14 @@ export class GameScene extends Phaser.Scene {
   private debugPaths = false;
   private gameOver = false;
   private hasEnemies = false;
-  private levelConfig: LevelConfig = { mode: "tilemap", key: "level1-map" };
+  private levelConfig: LevelConfig = { key: "level1-map" };
 
   constructor() {
     super(GAME_SCENE_KEY);
   }
 
   init(data: { level?: LevelConfig }): void {
-    this.levelConfig = data.level ?? { mode: "tilemap", key: "level1-map" };
+    this.levelConfig = data.level ?? { key: "level1-map" };
     this.gameOver = false;
     this.hasEnemies = false;
   }
@@ -73,10 +70,7 @@ export class GameScene extends Phaser.Scene {
     this.pathGraphics = this.add.graphics().setDepth(50);
 
     // Load level — returns map dimensions for camera/world bounds
-    const { mapW, mapH } =
-      this.levelConfig.mode === "tilemap"
-        ? this.loadTiledLevel(this.levelConfig.key)
-        : this.loadDataLevel(this.levelConfig.data);
+    const { mapW, mapH } = this.loadTiledLevel(this.levelConfig.key);
 
     // Enemy↔enemy collision (mode-independent)
     this.physics.add.collider(this.enemyGroup, this.enemyGroup);
@@ -281,54 +275,6 @@ export class GameScene extends Phaser.Scene {
       (bullet as Phaser.GameObjects.GameObject).destroy();
     });
     this.physics.add.collider(this.enemyBullets, wallLayer, (bullet) => {
-      (bullet as Phaser.GameObjects.GameObject).destroy();
-    });
-
-    return { mapW, mapH };
-  }
-
-  /**
-   * Loads a level from a TypeScript LevelData object (test levels 2–7).
-   * Walls are rendered as coloured rectangles with static physics bodies.
-   */
-  private loadDataLevel(data: LevelData): { mapW: number; mapH: number } {
-    const mapW = data.width ?? MAP_WIDTH;
-    const mapH = data.height ?? MAP_HEIGHT;
-
-    this.physics.world.setBounds(0, 0, mapW, mapH);
-
-    const wallGroup = this.physics.add.staticGroup();
-    const walls = data.walls;
-
-    for (const { x, y, w, h } of walls) {
-      const rect = this.add.rectangle(x, y, w, h, WALL_COLOR);
-      this.physics.add.existing(rect, true);
-      wallGroup.add(rect);
-    }
-
-    this.pathfinder = new Pathfinder(walls, mapW, mapH);
-
-    this.player = new Player(this, data.playerStart.x, data.playerStart.y, this.playerBullets);
-
-    for (const spawn of data.enemySpawns) {
-      let enemy: MeleeEnemy | ShooterEnemy;
-      if (spawn.type === "melee") {
-        enemy = new MeleeEnemy(this, spawn.x, spawn.y, walls);
-      } else {
-        enemy = new ShooterEnemy(this, spawn.x, spawn.y, this.enemyBullets, walls);
-      }
-      enemy.setPathfinder(this.pathfinder);
-      this.enemyGroup.add(enemy);
-    }
-    this.hasEnemies = data.enemySpawns.length > 0;
-
-    // Wall physics colliders
-    this.physics.add.collider(this.player, wallGroup);
-    this.physics.add.collider(this.enemyGroup, wallGroup);
-    this.physics.add.collider(this.playerBullets, wallGroup, (bullet) => {
-      (bullet as Phaser.GameObjects.GameObject).destroy();
-    });
-    this.physics.add.collider(this.enemyBullets, wallGroup, (bullet) => {
       (bullet as Phaser.GameObjects.GameObject).destroy();
     });
 

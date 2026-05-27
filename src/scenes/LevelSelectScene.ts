@@ -1,22 +1,12 @@
 import Phaser from "phaser";
-import { level2 } from "../level/level2";
-import { level3 } from "../level/level3";
-import { level4 } from "../level/level4";
-import { level5 } from "../level/level5";
-import { level6 } from "../level/level6";
-import { level7 } from "../level/level7";
 import { GAME_SCENE_KEY, type LevelConfig } from "./GameScene";
 
 export const LEVEL_SELECT_SCENE_KEY = "LevelSelect";
 
+// Add new levels here after creating them in Tiled and registering in PreloadScene.
+// See docs/how-to-add-level.md for step-by-step instructions.
 const LEVELS: Array<{ label: string; config: LevelConfig }> = [
-  { label: "1 — Боевой (враги)", config: { mode: "tilemap", key: "level1-map" } },
-  { label: "2 — Solo Melee", config: { mode: "data", data: level2 } },
-  { label: "3 — Solo Shooter", config: { mode: "data", data: level3 } },
-  { label: "4 — Pathfinding Maze", config: { mode: "data", data: level4 } },
-  { label: "5 — Melee Dojo", config: { mode: "data", data: level5 } },
-  { label: "6 — Shooter Range", config: { mode: "data", data: level6 } },
-  { label: "7 — Mixed Pack", config: { mode: "data", data: level7 } },
+  { label: "1 — Уровень 1", config: { key: "level1-map" } },
 ];
 
 export class LevelSelectScene extends Phaser.Scene {
@@ -56,11 +46,23 @@ export class LevelSelectScene extends Phaser.Scene {
     });
 
     const KC = Phaser.Input.Keyboard.KeyCodes;
-    const keyCodes = [KC.ONE, KC.TWO, KC.THREE, KC.FOUR, KC.FIVE, KC.SIX, KC.SEVEN];
-    keyCodes.forEach((code, i) => {
-      this.input.keyboard
-        ?.addKey(code)
-        .once("down", () => this.scene.start(GAME_SCENE_KEY, { level: LEVELS[i]?.config }));
+    LEVELS.forEach(({ config }, i) => {
+      const code = [
+        KC.ONE,
+        KC.TWO,
+        KC.THREE,
+        KC.FOUR,
+        KC.FIVE,
+        KC.SIX,
+        KC.SEVEN,
+        KC.EIGHT,
+        KC.NINE,
+      ][i];
+      if (code !== undefined) {
+        this.input.keyboard
+          ?.addKey(code)
+          .once("down", () => this.scene.start(GAME_SCENE_KEY, { level: config }));
+      }
     });
   }
 }
