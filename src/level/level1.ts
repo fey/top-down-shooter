@@ -1,11 +1,7 @@
 import { MAP_HEIGHT, MAP_WIDTH } from "../config";
+import type { WallDef } from "../types";
 
-export interface WallDef {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-}
+export type { WallDef };
 
 export interface EnemySpawn {
   type: "melee" | "shooter";

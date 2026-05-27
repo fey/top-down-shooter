@@ -1,12 +1,6 @@
 import Phaser from "phaser";
 import { PATH_CELL_SIZE, PATH_SMOOTH_ENABLED } from "../config";
-
-interface WallDef {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-}
+import type { WallDef } from "../types";
 
 interface Cell {
   col: number;

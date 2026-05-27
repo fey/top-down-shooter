@@ -1,24 +1,22 @@
 import Phaser from "phaser";
-import type { LevelData } from "../level/level1";
-import { level1 } from "../level/level1";
 import { level2 } from "../level/level2";
 import { level3 } from "../level/level3";
 import { level4 } from "../level/level4";
 import { level5 } from "../level/level5";
 import { level6 } from "../level/level6";
 import { level7 } from "../level/level7";
-import { GAME_SCENE_KEY } from "./GameScene";
+import { GAME_SCENE_KEY, type LevelConfig } from "./GameScene";
 
 export const LEVEL_SELECT_SCENE_KEY = "LevelSelect";
 
-const LEVELS: Array<{ label: string; data: LevelData }> = [
-  { label: "1 — Боевой (враги)", data: level1 },
-  { label: "2 — Solo Melee", data: level2 },
-  { label: "3 — Solo Shooter", data: level3 },
-  { label: "4 — Pathfinding Maze", data: level4 },
-  { label: "5 — Melee Dojo", data: level5 },
-  { label: "6 — Shooter Range", data: level6 },
-  { label: "7 — Mixed Pack", data: level7 },
+const LEVELS: Array<{ label: string; config: LevelConfig }> = [
+  { label: "1 — Боевой (враги)", config: { mode: "tilemap", key: "level1-map" } },
+  { label: "2 — Solo Melee", config: { mode: "data", data: level2 } },
+  { label: "3 — Solo Shooter", config: { mode: "data", data: level3 } },
+  { label: "4 — Pathfinding Maze", config: { mode: "data", data: level4 } },
+  { label: "5 — Melee Dojo", config: { mode: "data", data: level5 } },
+  { label: "6 — Shooter Range", config: { mode: "data", data: level6 } },
+  { label: "7 — Mixed Pack", config: { mode: "data", data: level7 } },
 ];
 
 export class LevelSelectScene extends Phaser.Scene {
@@ -40,7 +38,7 @@ export class LevelSelectScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    LEVELS.forEach(({ label, data }, i) => {
+    LEVELS.forEach(({ label, config }, i) => {
       const y = startY + i * BUTTON_SPACING;
       const btn = this.add
         .text(width / 2, y, label, {
@@ -54,7 +52,7 @@ export class LevelSelectScene extends Phaser.Scene {
 
       btn.on("pointerover", () => btn.setStyle({ color: "#ffffff" }));
       btn.on("pointerout", () => btn.setStyle({ color: "#aaffaa" }));
-      btn.on("pointerdown", () => this.scene.start(GAME_SCENE_KEY, { level: data }));
+      btn.on("pointerdown", () => this.scene.start(GAME_SCENE_KEY, { level: config }));
     });
 
     const KC = Phaser.Input.Keyboard.KeyCodes;
@@ -62,7 +60,7 @@ export class LevelSelectScene extends Phaser.Scene {
     keyCodes.forEach((code, i) => {
       this.input.keyboard
         ?.addKey(code)
-        .once("down", () => this.scene.start(GAME_SCENE_KEY, { level: LEVELS[i]?.data }));
+        .once("down", () => this.scene.start(GAME_SCENE_KEY, { level: LEVELS[i]?.config }));
     });
   }
 }

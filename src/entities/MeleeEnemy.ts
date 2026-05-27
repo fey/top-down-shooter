@@ -10,6 +10,7 @@ import {
   MELEE_SLOT_RADIUS,
   WAYPOINT_REACH_DIST,
 } from "../config";
+import type { WallDef } from "../types";
 import { Enemy, EnemyState } from "./Enemy";
 import type { Player } from "./Player";
 
@@ -20,17 +21,12 @@ export class MeleeEnemy extends Enemy {
   private searchEnteredTime = 0;
   private readonly lastKnownPos = new Phaser.Math.Vector2(-9999, -9999);
 
-  constructor(
-    scene: Phaser.Scene,
-    x: number,
-    y: number,
-    wallGroup: Phaser.Physics.Arcade.StaticGroup,
-  ) {
+  constructor(scene: Phaser.Scene, x: number, y: number, walls: WallDef[]) {
     super(scene, x, y, "enemy_melee", MELEE_ENEMY_HP);
     this.setTint(0xff4444);
     this.baseSpeed = MELEE_ENEMY_SPEED;
     this.flankRadius = MELEE_SLOT_RADIUS;
-    this.setWallGroup(wallGroup);
+    this.setWalls(walls);
   }
 
   tick(player: Player): void {

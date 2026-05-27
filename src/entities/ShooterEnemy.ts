@@ -11,6 +11,7 @@ import {
   SHOOTER_RANGE,
   WAYPOINT_REACH_DIST,
 } from "../config";
+import type { WallDef } from "../types";
 import { Bullet } from "./Bullet";
 import { Enemy, EnemyState } from "./Enemy";
 import type { Player } from "./Player";
@@ -28,14 +29,14 @@ export class ShooterEnemy extends Enemy {
     x: number,
     y: number,
     enemyBullets: Phaser.Physics.Arcade.Group,
-    wallGroup: Phaser.Physics.Arcade.StaticGroup,
+    walls: WallDef[],
   ) {
     super(scene, x, y, "enemy_shooter", SHOOTER_ENEMY_HP);
     this.setTint(0x4444ff);
     this.baseSpeed = SHOOTER_ENEMY_SPEED;
     this.flankRadius = SHOOTER_RANGE;
     this.enemyBullets = enemyBullets;
-    this.setWallGroup(wallGroup);
+    this.setWalls(walls);
   }
 
   tick(player: Player): void {

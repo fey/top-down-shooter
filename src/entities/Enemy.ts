@@ -12,6 +12,7 @@ import {
   WALL_SEPARATION_STRENGTH,
   WAYPOINT_REACH_DIST,
 } from "../config";
+import type { WallDef } from "../types";
 import type { Player } from "./Player";
 
 export enum EnemyState {
@@ -32,7 +33,7 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
   flankRadius = 0;
   protected baseSpeed = 0;
   protected pathfinder: Pathfinder | null = null;
-  protected wallGroup: Phaser.Physics.Arcade.StaticGroup | null = null;
+  protected walls: WallDef[] | null = null;
 
   private lastDodgeTime = 0;
   private dodgeEndTime = 0;
@@ -61,18 +62,20 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.pathfinder = pf;
   }
 
-  setWallGroup(wg: Phaser.Physics.Arcade.StaticGroup): void {
-    this.wallGroup = wg;
+  setWalls(walls: WallDef[]): void {
+    this.walls = walls;
   }
 
   protected hasLoS(player: Player): boolean {
-    if (this.wallGroup === null) return true;
+    if (this.walls === null) return true;
     const line = new Phaser.Geom.Line(this.x, this.y, player.x, player.y);
-    for (const wall of this.wallGroup.getChildren()) {
-      const bounds = (
-        wall as Phaser.GameObjects.Components.Size &
-          Phaser.GameObjects.GameObject & { getBounds(): Phaser.Geom.Rectangle }
-      ).getBounds();
+    for (const wall of this.walls) {
+      const bounds = new Phaser.Geom.Rectangle(
+        wall.x - wall.w / 2,
+        wall.y - wall.h / 2,
+        wall.w,
+        wall.h,
+      );
       if (Phaser.Geom.Intersects.LineToRectangle(line, bounds)) return false;
     }
     return true;

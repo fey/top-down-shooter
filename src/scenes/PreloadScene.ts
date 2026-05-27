@@ -8,6 +8,14 @@ export class PreloadScene extends Phaser.Scene {
     super(PRELOAD_SCENE_KEY);
   }
 
+  preload(): void {
+    // Kenney Top-Down Shooter tilesheet (64×64 tiles, 27 columns × 20 rows)
+    this.load.image("tiles-kenney", "assets/tiles/tilesheet_complete.png");
+
+    // Level 1 Tiled map (user creates this in Tiled and exports as JSON)
+    this.load.tilemapTiledJSON("level1-map", "assets/maps/level1.json");
+  }
+
   create(): void {
     const gfx = this.add.graphics();
 
