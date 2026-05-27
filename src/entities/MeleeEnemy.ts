@@ -22,7 +22,8 @@ export class MeleeEnemy extends Enemy {
   }
 
   tick(player: Player): void {
-    if (this.checkAndTriggerDodge(player)) return;
+    // FUTURE: re-enable dodge when polished
+    // if (this.checkAndTriggerDodge(player)) return;
 
     const dist = Phaser.Math.Distance.Between(this.x, this.y, player.x, player.y);
 

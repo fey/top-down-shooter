@@ -35,7 +35,8 @@ export class ShooterEnemy extends Enemy {
   }
 
   tick(player: Player): void {
-    if (this.checkAndTriggerDodge(player)) return;
+    // FUTURE: re-enable dodge when polished
+    // if (this.checkAndTriggerDodge(player)) return;
 
     const dist = Phaser.Math.Distance.Between(this.x, this.y, player.x, player.y);
     const now = this.scene.time.now;
@@ -57,7 +58,8 @@ export class ShooterEnemy extends Enemy {
           if (this.hasLoS(player)) {
             this.state = EnemyState.SHOOT;
           } else {
-            this.enterStrafe(now);
+            // FUTURE: re-enable strafe when polished
+            // this.enterStrafe(now);
           }
         }
         break;
@@ -69,27 +71,32 @@ export class ShooterEnemy extends Enemy {
           this.spawnBullet(Phaser.Math.Angle.Between(this.x, this.y, player.x, player.y));
           this.lastFiredAt = now;
         }
-        if (!this.hasLoS(player)) this.enterStrafe(now);
+        // FUTURE: re-enable strafe when polished
+        // if (!this.hasLoS(player)) this.enterStrafe(now);
+        if (!this.hasLoS(player)) this.state = EnemyState.CHASE;
         if (dist > SHOOTER_RANGE) this.state = EnemyState.CHASE;
         break;
 
-      case EnemyState.STRAFE:
-        this.applyStrafe(player, now);
-        if (this.hasLoS(player)) this.state = EnemyState.SHOOT;
-        if (dist > SHOOTER_RANGE) this.state = EnemyState.CHASE;
-        break;
+      // FUTURE: re-enable strafe state when polished
+      // case EnemyState.STRAFE:
+      //   this.applyStrafe(player, now);
+      //   if (this.hasLoS(player)) this.state = EnemyState.SHOOT;
+      //   if (dist > SHOOTER_RANGE) this.state = EnemyState.CHASE;
+      //   break;
 
       default:
         break;
     }
   }
 
+  // biome-ignore lint/correctness/noUnusedPrivateClassMembers: FUTURE re-enable strafe
   private enterStrafe(now: number): void {
     this.state = EnemyState.STRAFE;
     this.strafeSign = Math.random() < 0.5 ? 1 : -1;
     this.strafeFlipTime = now + 1000;
   }
 
+  // biome-ignore lint/correctness/noUnusedPrivateClassMembers: FUTURE re-enable strafe
   private applyStrafe(player: Player, now: number): void {
     if (now >= this.strafeFlipTime) {
       this.strafeSign *= -1;
