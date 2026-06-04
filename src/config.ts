@@ -33,11 +33,6 @@ export const SHOOTER_KITE_ADVANCE_DIST = 402; // SHOOTER_RANGE * 1.15 — сбл
 export const ENEMY_AGGRO_RANGE = 250;
 export const PACK_ALERT_RADIUS = 300;
 export const MELEE_ATTACK_RANGE = 50;
-export const MELEE_SLOT_RADIUS = 30;
-export const DODGE_COOLDOWN = 1500;
-export const DODGE_DURATION = 300;
-export const DODGE_ANGLE_THRESHOLD = 0.44;
-export const DODGE_SPEED_MULT = 1.8;
 
 export const PATH_CELL_SIZE = 64;
 export const PATH_RECALC_DIST = 128;

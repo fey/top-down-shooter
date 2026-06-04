@@ -46,7 +46,7 @@ top-down-shooter/
       GameOverScene.ts     # экран победы/поражения
     entities/
       Player.ts            # игрок: движение, прицеливание, стрельба, HP
-      Enemy.ts             # базовый класс: state machine, dodge, pathfinding
+      Enemy.ts             # базовый класс: state machine, pathfinding
       MeleeEnemy.ts        # ближний бой: преследует, бьёт при контакте
       ShooterEnemy.ts      # дальний бой: LoS, SEARCH, стрельба, кайтинг
       Bullet.ts            # снаряд с TTL и коллизиями
@@ -55,7 +55,6 @@ top-down-shooter/
       Pistol.ts            # единственное оружие (пока)
     ai/
       Pathfinder.ts        # A* pathfinding по сетке с обходом стен
-      SlotCoordinator.ts   # распределяет 8 позиций флангирования вокруг игрока
     level/
       level1.ts            # боевой уровень: стены, 4 melee + 2 shooter врага
       level2.ts            # тренировочный уровень: только стены периметра, без врагов
@@ -88,22 +87,20 @@ Sprite + Arcade Physics body. Управление: WASD (нормализова
 ### Враги
 
 **Базовый класс `Enemy`:**
-- State machine: `IDLE → CHASE → ATTACK / SHOOT / SEARCH`, с прерывателем `DODGE`.
-- **Dodge**: если игрок прицелился в врага (угол < `DODGE_ANGLE_THRESHOLD`), враг уклоняется перпендикулярно, кулдаун — `DODGE_COOLDOWN`. Может быть переопределён в подклассах (`canDodge()` hook).
+- State machine: `IDLE → CHASE → ATTACK / SHOOT / SEARCH`.
 - **Pack alerts**: при агро враг оповещает соседних (`PACK_ALERT_RADIUS`) бездействующих врагов.
-- **Slot-based positioning**: `SlotCoordinator` назначает врагам одну из 8 позиций вокруг игрока. При смерти слот освобождается.
 - **Pathfinding**: `Pathfinder` (A* на сетке 64×64 px) строит маршрут до цели, пересчитывается при отклонении > `PATH_RECALC_DIST`.
+- Скучивание врагов предотвращают коллизии Arcade Physics (enemy↔enemy collider), отдельной системы позиционирования нет.
 
 **`MeleeEnemy`** (красный):
-- IDLE → CHASE при агро. В CHASE — идёт к назначенному слоту вокруг игрока через pathfinding.
+- IDLE → CHASE при агро. В CHASE — идёт прямо к игроку через pathfinding.
 - ATTACK при дистанции ≤ `MELEE_ATTACK_RANGE`: наносит урон с кулдауном.
-- Dodge не ограничен LoS.
 
 **`ShooterEnemy`** (синий):
 - IDLE → CHASE при LoS + агро-дистанции. В CHASE — навигация к позиции игрока.
 - SHOOT при LoS в зоне `SHOOTER_RANGE`: стреляет с кулдауном 1500 мс, кайтит (отступает ближе `SHOOTER_KITE_RETREAT_DIST`, сближается дальше `SHOOTER_KITE_ADVANCE_DIST`).
 - SEARCH при потере LoS: идёт к последней известной позиции игрока.
-- LoS кешируется один раз за тик (`losCache`). Dodge только при наличии LoS (`canDodge()` переопределён).
+- LoS кешируется один раз за тик (`losCache`).
 - STRAFE реализован в коде, но отключён (`// FUTURE`).
 
 ### Уровни
@@ -149,11 +146,6 @@ Sprite + Arcade Physics body. Управление: WASD (нормализова
 | `ENEMY_AGGRO_RANGE` | 250 px | |
 | `PACK_ALERT_RADIUS` | 300 px | радиус оповещения союзников |
 | `MELEE_ATTACK_RANGE` | 50 px | |
-| `MELEE_SLOT_RADIUS` | 30 px | |
-| `DODGE_COOLDOWN` | 1500 мс | |
-| `DODGE_DURATION` | 300 мс | |
-| `DODGE_ANGLE_THRESHOLD` | 0.44 рад | ~25°, прицеливание = уклонение |
-| `DODGE_SPEED_MULT` | 1.8× | множитель скорости при уклонении |
 | `PATH_CELL_SIZE` | 64 px | размер ячейки pathfinding-сетки |
 | `PATH_RECALC_DIST` | 128 px | отклонение от пути → пересчёт |
 | `WAYPOINT_REACH_DIST` | 24 px | дистанция «достиг вейпоинта» |

@@ -1,6 +1,5 @@
 import Phaser from "phaser";
 import { Pathfinder } from "../ai/Pathfinder";
-import { SlotCoordinator } from "../ai/SlotCoordinator";
 import { MAP_HEIGHT, MAP_WIDTH, PACK_ALERT_RADIUS } from "../config";
 import { DebugOverlay } from "../debug/DebugOverlay";
 import { Bullet } from "../entities/Bullet";
@@ -15,7 +14,7 @@ import { LEVEL_SELECT_SCENE_KEY } from "./LevelSelectScene";
 
 const DEBUG_MELEE_COLOR = 0xff4444;
 const DEBUG_SHOOTER_COLOR = 0x4444ff;
-const DEBUG_SLOT_COLOR = 0xffff00;
+const DEBUG_TARGET_COLOR = 0xffff00;
 
 export const GAME_SCENE_KEY = "Game";
 export type { LevelConfig };
@@ -41,7 +40,6 @@ export class GameScene extends Phaser.Scene {
   private playerBullets!: Phaser.Physics.Arcade.Group;
   private enemyBullets!: Phaser.Physics.Arcade.Group;
   private enemyGroup!: Phaser.Physics.Arcade.Group;
-  private coordinator!: SlotCoordinator;
   private pathfinder!: Pathfinder;
   private pathGraphics!: Phaser.GameObjects.Graphics;
   private debugPaths = false;
@@ -65,7 +63,6 @@ export class GameScene extends Phaser.Scene {
     this.playerBullets = this.physics.add.group({ classType: Bullet, runChildUpdate: true });
     this.enemyBullets = this.physics.add.group({ classType: Bullet, runChildUpdate: true });
     this.enemyGroup = this.physics.add.group();
-    this.coordinator = new SlotCoordinator();
     this.pathGraphics = this.add.graphics().setDepth(50);
 
     // Load level — returns map dimensions for camera/world bounds
@@ -96,29 +93,16 @@ export class GameScene extends Phaser.Scene {
       this,
     );
 
-    this.events.on("requestSlot", (enemy: Enemy) => {
-      this.coordinator.assignSlot(enemy, this.player);
-    });
-
     this.events.on("packAlert", (x: number, y: number) => {
       for (const obj of this.enemyGroup.getChildren()) {
         const e = obj as Enemy;
         if (e.state === EnemyState.IDLE) {
           const d = Phaser.Math.Distance.Between(x, y, e.x, e.y);
           if (d < PACK_ALERT_RADIUS) {
-            this.coordinator.assignSlot(e, this.player);
             e.state = EnemyState.CHASE;
           }
         }
       }
-    });
-
-    this.events.on("enemyDied", (e: Enemy) => {
-      this.coordinator.releaseSlot(e);
-    });
-
-    this.events.on("releaseSlot", (e: Enemy) => {
-      this.coordinator.releaseSlot(e);
     });
 
     this.cameras.main.startFollow(this.player);
@@ -182,7 +166,7 @@ export class GameScene extends Phaser.Scene {
       const target = enemy.getLastPathTarget();
       if (target) {
         const cross = 8;
-        this.pathGraphics.lineStyle(2, DEBUG_SLOT_COLOR, 0.9);
+        this.pathGraphics.lineStyle(2, DEBUG_TARGET_COLOR, 0.9);
         this.pathGraphics.beginPath();
         this.pathGraphics.moveTo(target.x - cross, target.y);
         this.pathGraphics.lineTo(target.x + cross, target.y);

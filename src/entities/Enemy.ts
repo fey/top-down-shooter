@@ -1,10 +1,6 @@
 import Phaser from "phaser";
 import type { Pathfinder } from "../ai/Pathfinder";
 import {
-  DODGE_ANGLE_THRESHOLD,
-  DODGE_COOLDOWN,
-  DODGE_DURATION,
-  DODGE_SPEED_MULT,
   ENEMY_BODY_RADIUS,
   ENEMY_SPRITE_SCALE,
   PATH_CELL_SIZE,
@@ -23,23 +19,14 @@ export enum EnemyState {
   ATTACK = "ATTACK",
   SHOOT = "SHOOT",
   STRAFE = "STRAFE",
-  DODGE = "DODGE",
   SEARCH = "SEARCH",
 }
 
 export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
   hp: number;
   override state: EnemyState = EnemyState.IDLE;
-  prevState: EnemyState = EnemyState.IDLE;
-  flankAngle = 0;
-  flankRadius = 0;
-  protected baseSpeed = 0;
   protected pathfinder: Pathfinder | null = null;
   protected walls: WallDef[] | null = null;
-
-  private lastDodgeTime = 0;
-  private dodgeEndTime = 0;
-  private readonly dodgeVel = new Phaser.Math.Vector2();
 
   private waypoints: Phaser.Math.Vector2[] = [];
   private waypointIndex = 0;
@@ -98,7 +85,7 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
   /**
    * Invalidates the cached path so the next moveAlongPath call
    * unconditionally recalculates. Use when the navigation target changes
-   * abruptly (e.g., switching from slot to lastKnownPos on LoS loss).
+   * abruptly (e.g., switching from the player to lastKnownPos on LoS loss).
    */
   invalidatePath(): void {
     this.lastPathTarget.set(-9999, -9999);
@@ -115,13 +102,6 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
       this.scene.events.emit("enemyDied", this);
       this.destroy();
     }
-  }
-
-  getSlotPos(player: Player): Phaser.Math.Vector2 {
-    return new Phaser.Math.Vector2(
-      player.x + Math.cos(this.flankAngle) * this.flankRadius,
-      player.y + Math.sin(this.flankAngle) * this.flankRadius,
-    );
   }
 
   moveAlongPath(target: Phaser.Math.Vector2, speed: number): void {
@@ -238,47 +218,6 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
     } else {
       this.waypoints = [];
     }
-  }
-
-  // Subclasses override to conditionally block dodge (e.g. no LoS)
-  protected canDodge(_player: Player): boolean {
-    return true;
-  }
-
-  // Returns true while in DODGE — caller skips its own tick logic
-  checkAndTriggerDodge(player: Player): boolean {
-    const now = this.scene.time.now;
-
-    if (this.state === EnemyState.DODGE) {
-      if (now >= this.dodgeEndTime) {
-        this.state = this.prevState;
-      } else {
-        this.setVelocity(this.dodgeVel.x, this.dodgeVel.y);
-      }
-      return true;
-    }
-
-    if (this.state === EnemyState.IDLE) return false;
-    if (now - this.lastDodgeTime < DODGE_COOLDOWN) return false;
-    if (!this.canDodge(player)) return false;
-
-    const aimAngle = player.rotation;
-    const angleToEnemy = Phaser.Math.Angle.Between(player.x, player.y, this.x, this.y);
-    const diff = Math.abs(Phaser.Math.Angle.Wrap(aimAngle - angleToEnemy));
-
-    if (diff < DODGE_ANGLE_THRESHOLD) {
-      this.prevState = this.state;
-      this.state = EnemyState.DODGE;
-      this.lastDodgeTime = now;
-      this.dodgeEndTime = now + DODGE_DURATION;
-
-      const side = Math.random() < 0.5 ? 1 : -1;
-      const speed = this.baseSpeed * DODGE_SPEED_MULT;
-      const perpAngle = angleToEnemy + side * (Math.PI / 2);
-      this.dodgeVel.set(Math.cos(perpAngle) * speed, Math.sin(perpAngle) * speed);
-    }
-
-    return false;
   }
 
   abstract tick(player: Player): void;

@@ -7,7 +7,6 @@ import {
   MELEE_ENEMY_HP,
   MELEE_ENEMY_SPEED,
   MELEE_SEARCH_TIMEOUT,
-  MELEE_SLOT_RADIUS,
   WAYPOINT_REACH_DIST,
 } from "../config";
 import type { WallDef } from "../types";
@@ -23,8 +22,6 @@ export class MeleeEnemy extends Enemy {
 
   constructor(scene: Phaser.Scene, x: number, y: number, walls: WallDef[]) {
     super(scene, x, y, "enemy_melee", MELEE_ENEMY_HP);
-    this.baseSpeed = MELEE_ENEMY_SPEED;
-    this.flankRadius = MELEE_SLOT_RADIUS;
     this.setWalls(walls);
   }
 
@@ -35,7 +32,6 @@ export class MeleeEnemy extends Enemy {
     if (this.losCache) {
       this.lastKnownPos.set(player.x, player.y);
     }
-    if (this.checkAndTriggerDodge(player)) return;
 
     const dist = Phaser.Math.Distance.Between(this.x, this.y, player.x, player.y);
 
@@ -43,7 +39,6 @@ export class MeleeEnemy extends Enemy {
       case EnemyState.IDLE:
         this.setVelocity(0, 0);
         if (dist < ENEMY_AGGRO_RANGE && this.losCache) {
-          this.scene.events.emit("requestSlot", this);
           this.state = EnemyState.CHASE;
           this.scene.events.emit("packAlert", this.x, this.y);
         }
@@ -51,8 +46,8 @@ export class MeleeEnemy extends Enemy {
 
       case EnemyState.CHASE: {
         if (this.losCache) {
-          // Есть прямая видимость — идём к слоту (флангирующая позиция)
-          this.moveAlongPath(this.getSlotPos(player), MELEE_ENEMY_SPEED);
+          // Есть прямая видимость — идём прямо к игроку
+          this.moveAlongPath(new Phaser.Math.Vector2(player.x, player.y), MELEE_ENEMY_SPEED);
           if (dist < MELEE_ATTACK_RANGE) this.state = EnemyState.ATTACK;
         } else {
           // LoS потерян — идём к последней известной позиции игрока
@@ -61,7 +56,7 @@ export class MeleeEnemy extends Enemy {
             this.lastKnownPos.set(player.x, player.y);
           }
           // При только что потерянном LoS — принудительно пересчитать путь,
-          // чтобы не использовать устаревший маршрут к слоту
+          // чтобы не использовать устаревший маршрут к игроку
           if (this.prevLosCache) {
             this.invalidatePath();
           }
@@ -84,7 +79,6 @@ export class MeleeEnemy extends Enemy {
         }
         this.setVelocity(0, 0);
         if (this.scene.time.now - this.searchEnteredTime >= MELEE_SEARCH_TIMEOUT) {
-          this.scene.events.emit("releaseSlot", this);
           this.state = EnemyState.IDLE;
         }
         break;
@@ -99,10 +93,6 @@ export class MeleeEnemy extends Enemy {
       default:
         break;
     }
-  }
-
-  protected override canDodge(_player: Player): boolean {
-    return this.losCache;
   }
 
   tryAttack(player: Player): void {

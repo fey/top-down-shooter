@@ -32,8 +32,6 @@ export class ShooterEnemy extends Enemy {
     walls: WallDef[],
   ) {
     super(scene, x, y, "enemy_shooter", SHOOTER_ENEMY_HP);
-    this.baseSpeed = SHOOTER_ENEMY_SPEED;
-    this.flankRadius = SHOOTER_RANGE;
     this.enemyBullets = enemyBullets;
     this.setWalls(walls);
   }
@@ -44,7 +42,6 @@ export class ShooterEnemy extends Enemy {
     if (this.losCache) {
       this.lastKnownPos.set(player.x, player.y);
     }
-    if (this.checkAndTriggerDodge(player)) return;
 
     const dist = Phaser.Math.Distance.Between(this.x, this.y, player.x, player.y);
     const now = this.scene.time.now;
@@ -53,19 +50,15 @@ export class ShooterEnemy extends Enemy {
       case EnemyState.IDLE:
         this.setVelocity(0, 0);
         if (dist < ENEMY_AGGRO_RANGE && this.losCache) {
-          this.scene.events.emit("requestSlot", this);
           this.state = EnemyState.CHASE;
           this.scene.events.emit("packAlert", this.x, this.y);
         }
         break;
 
       case EnemyState.CHASE: {
-        // Без LoS — идти прямо к игроку (pathfinding обогнёт стену)
-        // С LoS — идти к слот-позиции (правильная дистанция для стрельбы)
-        const target = this.losCache
-          ? this.getSlotPos(player)
-          : new Phaser.Math.Vector2(player.x, player.y);
-        this.moveAlongPath(target, SHOOTER_ENEMY_SPEED);
+        // Идти к игроку по A* (без LoS pathfinding сам обогнёт стену),
+        // пока не выйдем на дистанцию выстрела с прямой видимостью
+        this.moveAlongPath(new Phaser.Math.Vector2(player.x, player.y), SHOOTER_ENEMY_SPEED);
         if (dist <= SHOOTER_RANGE && this.losCache) {
           this.state = EnemyState.SHOOT;
         }
@@ -80,12 +73,11 @@ export class ShooterEnemy extends Enemy {
         }
         // кайтинг: держать дистанцию SHOOTER_RANGE ± буфер
         if (dist < SHOOTER_KITE_RETREAT_DIST) {
-          // игрок слишком близко — запросить новый слот и перепозиционироваться
-          this.scene.events.emit("requestSlot", this);
-          this.state = EnemyState.CHASE;
+          // игрок слишком близко — отступать по прямой от него, продолжая стрелять
+          this.retreatFrom(player);
         } else if (dist > SHOOTER_KITE_ADVANCE_DIST) {
           // игрок слишком далеко — сблизиться через pathfinding (обходит стены)
-          this.moveAlongPath(this.getSlotPos(player), SHOOTER_ENEMY_SPEED);
+          this.moveAlongPath(new Phaser.Math.Vector2(player.x, player.y), SHOOTER_ENEMY_SPEED);
         } else {
           this.applyStrafe(player, now); // непрерывное боковое движение
         }
@@ -124,9 +116,12 @@ export class ShooterEnemy extends Enemy {
     }
   }
 
-  protected override canDodge(_player: Player): boolean {
-    // LoS already computed in tick(); player arg not needed here
-    return this.losCache;
+  private retreatFrom(player: Player): void {
+    const awayAngle = Phaser.Math.Angle.Between(player.x, player.y, this.x, this.y);
+    this.setVelocity(
+      Math.cos(awayAngle) * SHOOTER_ENEMY_SPEED,
+      Math.sin(awayAngle) * SHOOTER_ENEMY_SPEED,
+    );
   }
 
   // biome-ignore lint/correctness/noUnusedPrivateClassMembers: FUTURE re-enable strafe
