@@ -159,7 +159,7 @@ export class GameScene extends Phaser.Scene {
 
       const isMelee = enemy instanceof MeleeEnemy;
       const lineColor = isMelee ? DEBUG_MELEE_COLOR : DEBUG_SHOOTER_COLOR;
-      const waypoints = enemy.getWaypoints();
+      const waypoints = enemy.getRemainingWaypoints();
 
       if (waypoints.length > 0) {
         this.pathGraphics.lineStyle(2, lineColor, 0.8);

@@ -80,8 +80,9 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
     return this.losCache;
   }
 
-  getWaypoints(): Phaser.Math.Vector2[] {
-    return this.waypoints;
+  /** Оставшиеся вейпоинты (с текущего waypointIndex) — для debug-оверлея. */
+  getRemainingWaypoints(): Phaser.Math.Vector2[] {
+    return this.waypoints.slice(this.waypointIndex);
   }
 
   getLastPathTarget(): Phaser.Math.Vector2 | null {
