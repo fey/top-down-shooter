@@ -33,7 +33,7 @@ export class DebugOverlay {
       `Pos:    ${Math.round(this.player.x)}, ${Math.round(this.player.y)}`,
       `Vel:    ${Math.round(body.velocity.x)}, ${Math.round(body.velocity.y)}`,
       `FPS:    ${Math.round(this.player.scene.game.loop.actualFps)}`,
-      `F1: debug paths`,
+      `F1: debug overlay`,
     ];
     let idx = 0;
     for (const obj of this.enemies.getChildren()) {

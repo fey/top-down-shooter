@@ -27,6 +27,8 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
   override state: EnemyState = EnemyState.IDLE;
   protected pathfinder: Pathfinder | null = null;
   protected walls: WallDef[] | null = null;
+  /** LoS к игроку, кэшируется наследниками в начале каждого tick(). */
+  protected losCache = false;
 
   private waypoints: Phaser.Math.Vector2[] = [];
   private waypointIndex = 0;
@@ -71,6 +73,11 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
       if (Phaser.Geom.Intersects.LineToRectangle(line, bounds)) return false;
     }
     return true;
+  }
+
+  /** Текущее закэшированное LoS-состояние — для дебаг-отрисовки. */
+  getLosToPlayer(): boolean {
+    return this.losCache;
   }
 
   getWaypoints(): Phaser.Math.Vector2[] {

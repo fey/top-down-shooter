@@ -22,7 +22,6 @@ export class ShooterEnemy extends Enemy {
   private strafeSign = 1;
   private strafeFlipTime = 0;
   private readonly lastKnownPos = new Phaser.Math.Vector2(-9999, -9999);
-  private losCache = false; // refreshed at the top of every tick()
 
   constructor(
     scene: Phaser.Scene,

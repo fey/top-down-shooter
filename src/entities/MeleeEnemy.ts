@@ -15,7 +15,6 @@ import type { Player } from "./Player";
 
 export class MeleeEnemy extends Enemy {
   private lastAttackTime = 0;
-  private losCache = false;
   private prevLosCache = false;
   private searchEnteredTime = 0;
   private readonly lastKnownPos = new Phaser.Math.Vector2(-9999, -9999);

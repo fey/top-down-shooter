@@ -2,6 +2,8 @@ import Phaser from "phaser";
 import { Pathfinder } from "../ai/Pathfinder";
 import { MAP_HEIGHT, MAP_WIDTH, PACK_ALERT_RADIUS } from "../config";
 import { DebugOverlay } from "../debug/DebugOverlay";
+import { drawPathGrid } from "../debug/grid";
+import { drawEnemyPerception } from "../debug/perception";
 import { Bullet } from "../entities/Bullet";
 import { type Enemy, EnemyState } from "../entities/Enemy";
 import { MeleeEnemy } from "../entities/MeleeEnemy";
@@ -42,6 +44,7 @@ export class GameScene extends Phaser.Scene {
   private enemyGroup!: Phaser.Physics.Arcade.Group;
   private pathfinder!: Pathfinder;
   private pathGraphics!: Phaser.GameObjects.Graphics;
+  private gridGraphics!: Phaser.GameObjects.Graphics;
   private debugPaths = false;
   private gameOver = false;
   private hasEnemies = false;
@@ -67,6 +70,10 @@ export class GameScene extends Phaser.Scene {
 
     // Load level — returns map dimensions for camera/world bounds
     const { mapW, mapH } = this.loadTiledLevel(this.levelConfig.key);
+
+    // Статичная дебаг-сетка pathfinding: рисуется один раз, видимость — по F1
+    this.gridGraphics = this.add.graphics().setDepth(40).setVisible(false);
+    drawPathGrid(this.gridGraphics, this.pathfinder, mapW, mapH);
 
     // Enemy↔enemy collision (mode-independent)
     this.physics.add.collider(this.enemyGroup, this.enemyGroup);
@@ -119,6 +126,7 @@ export class GameScene extends Phaser.Scene {
 
     this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.F1).on("down", () => {
       this.debugPaths = !this.debugPaths;
+      this.gridGraphics.setVisible(this.debugPaths);
       if (!this.debugPaths) this.pathGraphics.clear();
     });
 
@@ -175,6 +183,12 @@ export class GameScene extends Phaser.Scene {
         this.pathGraphics.strokePath();
       }
     }
+
+    drawEnemyPerception(
+      this.pathGraphics,
+      this.enemyGroup.getChildren().map((obj) => obj as Enemy),
+      this.player,
+    );
   }
 
   /**
