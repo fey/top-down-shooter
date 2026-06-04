@@ -7,13 +7,13 @@ interface Cell {
   row: number;
 }
 
-interface AStarNode {
+interface PathNode {
   col: number;
   row: number;
   g: number;
   h: number;
   f: number;
-  parent: AStarNode | null;
+  parent: PathNode | null;
 }
 
 export class Pathfinder {
@@ -75,7 +75,7 @@ export class Pathfinder {
     end.col = Phaser.Math.Clamp(end.col, 0, this.cols - 1);
     end.row = Phaser.Math.Clamp(end.row, 0, this.rows - 1);
 
-    // If start cell is blocked (enemy in inflated wall zone), snap to nearest walkable
+    // If start cell is blocked (enemy pushed into a wall cell by physics), snap to nearest walkable
     if (!this.grid[start.row]?.[start.col]) {
       const fallback = this.nearestWalkable(start);
       if (!fallback) return [];
@@ -233,10 +233,10 @@ export class Pathfinder {
   private thetaStar(start: Cell, end: Cell): Cell[] {
     const key = (c: Cell) => c.row * this.cols + c.col;
 
-    const openMap = new Map<number, AStarNode>();
+    const openMap = new Map<number, PathNode>();
     const closed = new Set<number>();
 
-    const startNode: AStarNode = {
+    const startNode: PathNode = {
       ...start,
       g: 0,
       h: this.heuristic(start, end),
@@ -247,7 +247,7 @@ export class Pathfinder {
 
     while (openMap.size > 0) {
       // Pick node with lowest f (линейный скан — сетка ~510 клеток, куча не нужна)
-      let current: AStarNode | null = null;
+      let current: PathNode | null = null;
       for (const node of openMap.values()) {
         if (!current || node.f < current.f) current = node;
       }
@@ -351,9 +351,9 @@ export class Pathfinder {
     return nearest ? this.cellToWorld(nearest) : null;
   }
 
-  private reconstructPath(node: AStarNode): Cell[] {
+  private reconstructPath(node: PathNode): Cell[] {
     const path: Cell[] = [];
-    let current: AStarNode | null = node;
+    let current: PathNode | null = node;
     while (current) {
       path.unshift({ col: current.col, row: current.row });
       current = current.parent;
