@@ -13,4 +13,5 @@ export type LevelConfig = { key: string };
 export const LEVELS: Array<{ label: string; config: LevelConfig }> = [
   { label: "1 — Уровень 1", config: { key: "level1" } },
   { label: "2 — Квадрат в центре", config: { key: "level2" } },
+  { label: "Small test", config: { key: "level3" } },
 ];
