@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { PATH_CELL_SIZE, PATH_SMOOTH_ENABLED } from "../config";
+import { PATH_CELL_SIZE } from "../config";
 import type { WallDef } from "../types";
 
 interface Cell {
@@ -53,6 +53,15 @@ export class Pathfinder {
   }
 
   findPath(fromX: number, fromY: number, toX: number, toY: number): Phaser.Math.Vector2[] {
+    // LoS-шорткат: прямая до цели свободна — поиск не нужен.
+    // gridLoS не проверяет клетку самой цели. Это безопасно, пока цель —
+    // живая или последняя увиденная позиция игрока (физически проходимая).
+    // Для произвольных точек рядом с геометрией шорткат, в отличие от полного
+    // поиска, НЕ привязывает заблокированную цель к ближайшей проходимой клетке.
+    if (this.gridLoS(fromX, fromY, toX, toY)) {
+      return [new Phaser.Math.Vector2(toX, toY)];
+    }
+
     const start = this.worldToCell(fromX, fromY);
     const end = this.worldToCell(toX, toY);
 
@@ -85,42 +94,26 @@ export class Pathfinder {
     // Replace last waypoint with exact target position
     waypoints[waypoints.length - 1] = new Phaser.Math.Vector2(toX, toY);
 
-    if (PATH_SMOOTH_ENABLED) {
-      return this.smoothPath(waypoints);
-    }
-    return waypoints;
+    return this.trimStart(fromX, fromY, waypoints);
   }
 
   /**
-   * String pulling: remove unnecessary intermediate waypoints by checking
-   * line-of-sight between an anchor and each subsequent waypoint. If LoS
-   * holds, skip the intermediate point; when it breaks, commit the last
-   * visible point and advance the anchor.
+   * Убирает квантование старта: Theta* стартует из центра клетки врага,
+   * поэтому первые вейпоинты могут лежать «вбок» от реальной позиции.
+   * Отбрасываем ведущие точки, пока следующая за ними видна напрямую.
    */
-  private smoothPath(waypoints: Phaser.Math.Vector2[]): Phaser.Math.Vector2[] {
-    if (waypoints.length <= 2) return waypoints;
-
-    // biome-ignore lint/style/noNonNullAssertion: waypoints.length > 2 guarantees index 0 exists
-    const result: Phaser.Math.Vector2[] = [waypoints[0]!];
-    let anchor = 0;
-
-    for (let i = 2; i < waypoints.length; i++) {
-      // biome-ignore lint/style/noNonNullAssertion: anchor < i <= waypoints.length - 1
-      const anchorWp = waypoints[anchor]!;
-      // biome-ignore lint/style/noNonNullAssertion: i < waypoints.length by loop condition
-      const candidateWp = waypoints[i]!;
-      if (!this.gridLoS(anchorWp.x, anchorWp.y, candidateWp.x, candidateWp.y)) {
-        // LoS broken: commit the previous waypoint (i-1) as a bend point
-        // biome-ignore lint/style/noNonNullAssertion: i >= 2, so i-1 >= 1 < waypoints.length
-        result.push(waypoints[i - 1]!);
-        anchor = i - 1;
-      }
+  private trimStart(
+    fromX: number,
+    fromY: number,
+    waypoints: Phaser.Math.Vector2[],
+  ): Phaser.Math.Vector2[] {
+    let first = 0;
+    while (first + 1 < waypoints.length) {
+      const next = waypoints[first + 1];
+      if (!next || !this.gridLoS(fromX, fromY, next.x, next.y)) break;
+      first++;
     }
-
-    // Always include the final destination
-    // biome-ignore lint/style/noNonNullAssertion: waypoints.length > 2 guarantees last index exists
-    result.push(waypoints[waypoints.length - 1]!);
-    return result;
+    return waypoints.slice(first);
   }
 
   /**
@@ -129,8 +122,8 @@ export class Pathfinder {
    * grid cell along the line is blocked.
    *
    * NOTE: The destination cell (endpoint) is NOT checked by this method —
-   * only intermediate cells are examined. This is safe in the `smoothPath`
-   * context because A* guarantees that path endpoints are walkable. However,
+   * only intermediate cells are examined. This is safe in the Theta* / shortcut
+   * context because Theta* guarantees that path endpoints are walkable. However,
    * callers reusing this method elsewhere should be aware of this caveat.
    */
   private gridLoS(ax: number, ay: number, bx: number, by: number): boolean {
@@ -156,8 +149,8 @@ export class Pathfinder {
       const stepCol = e2 > -dr;
       const stepRow = e2 < dc;
       // When DDA steps diagonally, also check both cardinal neighbours —
-      // same corner-cutting prevention as A*. Without this, smoothPath
-      // creates diagonal shortcuts through 1-cell-wide corridor corners
+      // same corner-cutting prevention as Theta*. Without this, the LoS
+      // shortcut creates diagonal shortcuts through 1-cell-wide corridor corners
       // that the enemy's physical body cannot actually pass through.
       if (stepCol && stepRow) {
         if (!this.isWalkable(c + sc, r)) return false;
