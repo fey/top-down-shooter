@@ -35,7 +35,7 @@ export const PACK_ALERT_RADIUS = 300;
 export const MELEE_ATTACK_RANGE = 50;
 
 export const PATH_CELL_SIZE = 64;
-export const PATH_RECALC_DIST = 128;
+export const PATH_RECALC_DIST = 64; // отклонение цели от пути → пересчёт (1 клетка)
 export const WAYPOINT_REACH_DIST = 24;
 export const STUCK_TIME_MS = 350; // мс без движения → враг считается застрявшим
 export const STUCK_MOVE_THRESHOLD = 6; // пикселей — меньше этого = не двигался
