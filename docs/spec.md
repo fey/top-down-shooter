@@ -54,7 +54,7 @@ top-down-shooter/
       Weapon.ts            # базовый класс: кулдаун, спавн пуль
       Pistol.ts            # единственное оружие (пока)
     ai/
-      Pathfinder.ts        # A* pathfinding по сетке с обходом стен
+      Pathfinder.ts        # Theta* (any-angle) pathfinding по сетке с обходом стен
     level/
       level1.ts            # боевой уровень: стены, 4 melee + 2 shooter врага
       level2.ts            # тренировочный уровень: только стены периметра, без врагов
@@ -89,7 +89,7 @@ Sprite + Arcade Physics body. Управление: WASD (нормализова
 **Базовый класс `Enemy`:**
 - State machine: `IDLE → CHASE → ATTACK / SHOOT / SEARCH`.
 - **Pack alerts**: при агро враг оповещает соседних (`PACK_ALERT_RADIUS`) бездействующих врагов.
-- **Pathfinding**: `Pathfinder` (A* на сетке 64×64 px) строит маршрут до цели, пересчитывается при отклонении > `PATH_RECALC_DIST`.
+- **Pathfinding**: `Pathfinder` (Theta* на сетке 64×64 px) строит натянутый any-angle маршрут; если прямая до цели свободна — идёт напрямую без поиска. Путь пересчитывается при отклонении цели > `PATH_RECALC_DIST`.
 - Скучивание врагов предотвращают коллизии Arcade Physics (enemy↔enemy collider), отдельной системы позиционирования нет.
 
 **`MeleeEnemy`** (красный):
@@ -147,5 +147,5 @@ Sprite + Arcade Physics body. Управление: WASD (нормализова
 | `PACK_ALERT_RADIUS` | 300 px | радиус оповещения союзников |
 | `MELEE_ATTACK_RANGE` | 50 px | |
 | `PATH_CELL_SIZE` | 64 px | размер ячейки pathfinding-сетки |
-| `PATH_RECALC_DIST` | 128 px | отклонение от пути → пересчёт |
+| `PATH_RECALC_DIST` | 64 px | отклонение цели от пути → пересчёт |
 | `WAYPOINT_REACH_DIST` | 24 px | дистанция «достиг вейпоинта» |
