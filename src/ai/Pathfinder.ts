@@ -30,18 +30,22 @@ export class Pathfinder {
     // Initialize all cells as walkable
     this.grid = Array.from({ length: this.rows }, () => new Array(this.cols).fill(true));
 
-    // Mark cells blocked by walls (with padding = cellSize/2 to keep enemies away from edges)
-    const pad = cellSize / 2;
+    // Mark only the cells actually occupied by walls. No inflation: clearance
+    // around walls comes from Theta*/gridLoS corner-cutting checks, the wall
+    // separation force in Enemy, and the physics collider — inflating here
+    // killed entire walkable tiles next to grid-aligned walls.
     for (const wall of walls) {
-      const left = wall.x - wall.w / 2 - pad;
-      const top = wall.y - wall.h / 2 - pad;
-      const right = wall.x + wall.w / 2 + pad;
-      const bottom = wall.y + wall.h / 2 + pad;
+      const left = wall.x - wall.w / 2;
+      const top = wall.y - wall.h / 2;
+      const right = wall.x + wall.w / 2;
+      const bottom = wall.y + wall.h / 2;
 
+      // Half-open interval: a wall whose edge lies exactly on a cell boundary
+      // must not block the neighbouring cell (hence the -1 on max edges).
       const colMin = Math.max(0, Math.floor(left / cellSize));
-      const colMax = Math.min(this.cols - 1, Math.floor(right / cellSize));
+      const colMax = Math.min(this.cols - 1, Math.floor((right - 1) / cellSize));
       const rowMin = Math.max(0, Math.floor(top / cellSize));
-      const rowMax = Math.min(this.rows - 1, Math.floor(bottom / cellSize));
+      const rowMax = Math.min(this.rows - 1, Math.floor((bottom - 1) / cellSize));
 
       for (let r = rowMin; r <= rowMax; r++) {
         for (let c = colMin; c <= colMax; c++) {
