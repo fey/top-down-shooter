@@ -78,7 +78,7 @@ export class Pathfinder {
       end.row = fallback.row;
     }
 
-    const cells = this.astar(start, end);
+    const cells = this.thetaStar(start, end);
     if (cells.length === 0) return [];
 
     const waypoints: Phaser.Math.Vector2[] = cells.map((c) => this.cellToWorld(c));
@@ -227,7 +227,13 @@ export class Pathfinder {
     return null;
   }
 
-  private astar(start: Cell, end: Cell): Cell[] {
+  /**
+   * Theta* (basic): любой узел может наследовать родителя «через голову»
+   * current, если от parent(current) до соседа есть grid-LoS. Стоимости
+   * и эвристика евклидовы — путь получается any-angle, натянутым,
+   * без пост-сглаживания.
+   */
+  private thetaStar(start: Cell, end: Cell): Cell[] {
     const key = (c: Cell) => c.row * this.cols + c.col;
 
     const openMap = new Map<number, AStarNode>();
@@ -243,7 +249,7 @@ export class Pathfinder {
     openMap.set(key(start), startNode);
 
     while (openMap.size > 0) {
-      // Pick node with lowest f
+      // Pick node with lowest f (линейный скан — сетка ~510 клеток, куча не нужна)
       let current: AStarNode | null = null;
       for (const node of openMap.values()) {
         if (!current || node.f < current.f) current = node;
@@ -270,10 +276,17 @@ export class Pathfinder {
           if (!this.grid[neighbor.row]?.[current.col]) continue;
         }
 
-        // Diagonal cost: Math.SQRT2; cardinal: 1
-        const isDiag = neighbor.col !== current.col && neighbor.row !== current.row;
-        const moveCost = isDiag ? Math.SQRT2 : 1;
-        const tentativeG = current.g + moveCost;
+        // Theta*: если от parent(current) до соседа есть LoS — наследуем
+        // родителя через голову current (path 2), иначе обычный шаг A* (path 1)
+        let candidateParent = current;
+        let tentativeG: number;
+        const grandparent = current.parent;
+        if (grandparent && this.cellLoS(grandparent, neighbor)) {
+          candidateParent = grandparent;
+          tentativeG = grandparent.g + this.dist(grandparent, neighbor);
+        } else {
+          tentativeG = current.g + this.dist(current, neighbor);
+        }
 
         const existing = openMap.get(nKey);
         if (!existing || tentativeG < existing.g) {
@@ -284,7 +297,7 @@ export class Pathfinder {
             g: tentativeG,
             h,
             f: tentativeG + h,
-            parent: current,
+            parent: candidateParent,
           });
         }
       }
@@ -293,9 +306,21 @@ export class Pathfinder {
     return []; // no path found
   }
 
+  /** Euclidean distance в клетках — единая метрика для g-стоимости Theta*. */
+  private dist(a: Cell, b: Cell): number {
+    return Math.hypot(a.col - b.col, a.row - b.row);
+  }
+
+  /** Grid-LoS между центрами двух клеток (обёртка над gridLoS в мировых координатах). */
+  private cellLoS(a: Cell, b: Cell): boolean {
+    const aw = this.cellToWorld(a);
+    const bw = this.cellToWorld(b);
+    return this.gridLoS(aw.x, aw.y, bw.x, bw.y);
+  }
+
   private heuristic(a: Cell, b: Cell): number {
-    // Chebyshev distance (allows diagonal movement)
-    return Math.max(Math.abs(a.col - b.col), Math.abs(a.row - b.row));
+    // Euclidean — согласована с евклидовыми стоимостями Theta* (admissible)
+    return this.dist(a, b);
   }
 
   private neighbors8(cell: Cell): Cell[] {
