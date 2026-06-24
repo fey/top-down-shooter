@@ -61,3 +61,35 @@ export const WAYPOINT_REACH_DIST = 24;
 export const STUCK_TIME_MS = 350; // мс без движения → враг считается застрявшим
 export const STUCK_MOVE_THRESHOLD = 6; // пикселей — меньше этого = не двигался
 export const WALL_SEPARATION_STRENGTH = 10; // сила отталкивания от стен — меньше значение = плавнее скольжение вдоль стен
+
+// --- Тайминги (мс) ---
+export const PLAYER_INVINCIBLE_MS = 500; // неуязвимость после получения урона
+export const PLAYER_HIT_FLASH_MS = 150; // длительность красного тинта при уроне
+export const SHOOTER_STRAFE_FLIP_MS = 1000; // период смены направления strafe у ShooterEnemy
+
+// --- Размеры спрайтов и геометрия ---
+export const BULLET_SPRITE_W = 8; // ширина генерируемой текстуры пули, px
+export const BULLET_SPRITE_H = 4; // высота генерируемой текстуры пули, px
+export const SMART_BOT_DODGE_LATERAL_MULT = 1.8; // боковой зазор угрозы = ENEMY_BODY_RADIUS × это
+
+// --- Палитра ---
+// Тинты спрайтов (0xRRGGBB)
+export const COLOR_PLAYER_HIT_TINT = 0xff4444; // красная вспышка игрока при уроне
+export const COLOR_SMART_BOT_TINT = 0x44ff88; // зелёный — отличать SmartBot от обычных врагов
+export const COLOR_BULLET = 0xffff88; // цвет генерируемой текстуры пули
+// Debug-отрисовка путей (F1)
+export const COLOR_DEBUG_MELEE = 0xff4444;
+export const COLOR_DEBUG_SHOOTER = 0x4444ff;
+export const COLOR_DEBUG_SMART = 0x44ff88;
+export const COLOR_DEBUG_TARGET = 0xffff00;
+// UI / фоны сцен (CSS-строки)
+export const COLOR_BG_GAME = "#1a1a1a";
+export const COLOR_BG_MENU = "#111111";
+export const COLOR_BG_GAMEOVER = "#000000";
+export const COLOR_TEXT = "#ffffff";
+export const COLOR_TEXT_MUTED = "#aaaaaa";
+export const COLOR_MENU_BTN = "#aaffaa";
+export const COLOR_MENU_BTN_HOVER = "#ffffff";
+export const COLOR_MENU_BTN_BG = "#223322";
+export const COLOR_WIN = "#88ff88";
+export const COLOR_LOSE = "#ff4444";

@@ -1,4 +1,11 @@
 import Phaser from "phaser";
+import {
+  COLOR_BG_MENU,
+  COLOR_MENU_BTN,
+  COLOR_MENU_BTN_BG,
+  COLOR_MENU_BTN_HOVER,
+  COLOR_TEXT,
+} from "../config";
 import { LEVELS } from "../level/levels";
 import { GAME_SCENE_KEY } from "./GameScene";
 
@@ -16,12 +23,12 @@ export class LevelSelectScene extends Phaser.Scene {
     const BUTTON_SPACING = 56;
     const startY = height / 2 - ((LEVELS.length - 1) / 2) * BUTTON_SPACING;
 
-    this.cameras.main.setBackgroundColor("#111111");
+    this.cameras.main.setBackgroundColor(COLOR_BG_MENU);
 
     this.add
       .text(width / 2, startY - 70, "Выберите уровень", {
         fontSize: "36px",
-        color: "#ffffff",
+        color: COLOR_TEXT,
       })
       .setOrigin(0.5);
 
@@ -30,15 +37,15 @@ export class LevelSelectScene extends Phaser.Scene {
       const btn = this.add
         .text(width / 2, y, label, {
           fontSize: "26px",
-          color: "#aaffaa",
-          backgroundColor: "#223322",
+          color: COLOR_MENU_BTN,
+          backgroundColor: COLOR_MENU_BTN_BG,
           padding: { x: 20, y: 8 },
         })
         .setOrigin(0.5)
         .setInteractive({ useHandCursor: true });
 
-      btn.on("pointerover", () => btn.setStyle({ color: "#ffffff" }));
-      btn.on("pointerout", () => btn.setStyle({ color: "#aaffaa" }));
+      btn.on("pointerover", () => btn.setStyle({ color: COLOR_MENU_BTN_HOVER }));
+      btn.on("pointerout", () => btn.setStyle({ color: COLOR_MENU_BTN }));
       btn.on("pointerdown", () => this.scene.start(GAME_SCENE_KEY, { level: config }));
     });
 

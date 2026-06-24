@@ -1,5 +1,13 @@
 import Phaser from "phaser";
-import { PLAYER_BODY_RADIUS, PLAYER_HP, PLAYER_SPEED, PLAYER_SPRITE_SCALE } from "../config";
+import {
+  COLOR_PLAYER_HIT_TINT,
+  PLAYER_BODY_RADIUS,
+  PLAYER_HIT_FLASH_MS,
+  PLAYER_HP,
+  PLAYER_INVINCIBLE_MS,
+  PLAYER_SPEED,
+  PLAYER_SPRITE_SCALE,
+} from "../config";
 import { Pistol } from "../weapons/Pistol";
 import type { Weapon } from "../weapons/Weapon";
 
@@ -44,13 +52,13 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     if (!this.active || !this.scene) return;
     const now = this.scene.time.now;
     if (now < this.invincibleUntil) return;
-    this.invincibleUntil = now + 500;
+    this.invincibleUntil = now + PLAYER_INVINCIBLE_MS;
 
     this.hp -= amount;
     this.scene.events.emit("hpChanged", this.hp);
 
-    this.setTint(0xff4444);
-    this.scene.time.delayedCall(150, () => {
+    this.setTint(COLOR_PLAYER_HIT_TINT);
+    this.scene.time.delayedCall(PLAYER_HIT_FLASH_MS, () => {
       if (this.active) this.clearTint();
     });
 

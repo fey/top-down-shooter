@@ -9,6 +9,7 @@ import {
   SHOOTER_KITE_ADVANCE_DIST,
   SHOOTER_KITE_RETREAT_DIST,
   SHOOTER_RANGE,
+  SHOOTER_STRAFE_FLIP_MS,
   WAYPOINT_REACH_DIST,
 } from "../config";
 import type { WallDef } from "../types";
@@ -19,9 +20,6 @@ import type { Player } from "./Player";
 export class ShooterEnemy extends Enemy {
   private lastFiredAt = 0;
   private readonly enemyBullets: Phaser.Physics.Arcade.Group;
-  private strafeSign = 1;
-  private strafeFlipTime = 0;
-  private readonly lastKnownPos = new Phaser.Math.Vector2(-9999, -9999);
 
   constructor(
     scene: Phaser.Scene,
@@ -36,10 +34,10 @@ export class ShooterEnemy extends Enemy {
   }
 
   tick(player: Player): void {
-    this.setRotation(Phaser.Math.Angle.Between(this.x, this.y, player.x, player.y));
+    this.faceTarget(player.x, player.y);
     this.losCache = this.hasLoS(player);
     if (this.losCache) {
-      this.lastKnownPos.set(player.x, player.y);
+      this.rememberLastKnown(player.x, player.y);
     }
 
     const dist = Phaser.Math.Distance.Between(this.x, this.y, player.x, player.y);
@@ -73,12 +71,13 @@ export class ShooterEnemy extends Enemy {
         // кайтинг: держать дистанцию SHOOTER_RANGE ± буфер
         if (dist < SHOOTER_KITE_RETREAT_DIST) {
           // игрок слишком близко — отступать по прямой от него, продолжая стрелять
-          this.retreatFrom(player);
+          this.retreatFrom(player, SHOOTER_ENEMY_SPEED);
         } else if (dist > SHOOTER_KITE_ADVANCE_DIST) {
           // игрок слишком далеко — сблизиться через pathfinding (обходит стены)
           this.moveAlongPath(new Phaser.Math.Vector2(player.x, player.y), SHOOTER_ENEMY_SPEED);
         } else {
-          this.applyStrafe(player, now); // непрерывное боковое движение
+          // непрерывное боковое движение
+          this.applyStrafe(player, SHOOTER_ENEMY_SPEED, SHOOTER_STRAFE_FLIP_MS, now);
         }
         // LoS гарантирован проверкой выше — стреляем без доп. проверки
         if (now - this.lastFiredAt >= SHOOTER_ENEMY_FIRE_COOLDOWN) {
@@ -88,13 +87,6 @@ export class ShooterEnemy extends Enemy {
         if (dist > SHOOTER_RANGE) this.state = EnemyState.CHASE;
         break;
       }
-
-      // FUTURE: re-enable strafe state when polished
-      // case EnemyState.STRAFE:
-      //   this.applyStrafe(player, now);
-      //   if (this.hasLoS(player)) this.state = EnemyState.SHOOT;
-      //   if (dist > SHOOTER_RANGE) this.state = EnemyState.CHASE;
-      //   break;
 
       case EnemyState.SEARCH: {
         if (this.losCache) {
@@ -113,34 +105,6 @@ export class ShooterEnemy extends Enemy {
       default:
         break;
     }
-  }
-
-  private retreatFrom(player: Player): void {
-    const awayAngle = Phaser.Math.Angle.Between(player.x, player.y, this.x, this.y);
-    this.setVelocity(
-      Math.cos(awayAngle) * SHOOTER_ENEMY_SPEED,
-      Math.sin(awayAngle) * SHOOTER_ENEMY_SPEED,
-    );
-  }
-
-  // biome-ignore lint/correctness/noUnusedPrivateClassMembers: FUTURE re-enable strafe
-  private enterStrafe(now: number): void {
-    this.state = EnemyState.STRAFE;
-    this.strafeSign = Math.random() < 0.5 ? 1 : -1;
-    this.strafeFlipTime = now + 1000;
-  }
-
-  private applyStrafe(player: Player, now: number): void {
-    if (now >= this.strafeFlipTime) {
-      this.strafeSign *= -1;
-      this.strafeFlipTime = now + 1000;
-    }
-    const angleToPlayer = Phaser.Math.Angle.Between(this.x, this.y, player.x, player.y);
-    const perpAngle = angleToPlayer + this.strafeSign * (Math.PI / 2);
-    this.setVelocity(
-      Math.cos(perpAngle) * SHOOTER_ENEMY_SPEED,
-      Math.sin(perpAngle) * SHOOTER_ENEMY_SPEED,
-    );
   }
 
   private spawnBullet(angle: number): void {

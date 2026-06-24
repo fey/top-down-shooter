@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { BULLET_SPRITE_H, BULLET_SPRITE_W, COLOR_BULLET } from "../config";
 import { LEVELS } from "../level/levels";
 import { LEVEL_SELECT_SCENE_KEY } from "./LevelSelectScene";
 
@@ -28,8 +29,8 @@ export class PreloadScene extends Phaser.Scene {
     const gfx = this.add.graphics();
 
     // Для пули нет подходящего ассета Kenney — оставляем генерацию
-    gfx.fillStyle(0xffff88, 1).fillRect(0, 0, 8, 4);
-    gfx.generateTexture("bullet", 8, 4);
+    gfx.fillStyle(COLOR_BULLET, 1).fillRect(0, 0, BULLET_SPRITE_W, BULLET_SPRITE_H);
+    gfx.generateTexture("bullet", BULLET_SPRITE_W, BULLET_SPRITE_H);
 
     gfx.destroy();
 
