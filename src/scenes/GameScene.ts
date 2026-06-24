@@ -1,47 +1,19 @@
 import Phaser from "phaser";
-import { Pathfinder } from "../ai/Pathfinder";
-import {
-  COLOR_BG_GAME,
-  COLOR_DEBUG_MELEE,
-  COLOR_DEBUG_SHOOTER,
-  COLOR_DEBUG_SMART,
-  COLOR_DEBUG_TARGET,
-  MAP_HEIGHT,
-  MAP_WIDTH,
-  PACK_ALERT_RADIUS,
-} from "../config";
+import type { Pathfinder } from "../ai/Pathfinder";
+import { COLOR_BG_GAME, PACK_ALERT_RADIUS } from "../config";
 import { DebugOverlay } from "../debug/DebugOverlay";
 import { drawPathGrid } from "../debug/grid";
-import { drawEnemyPerception } from "../debug/perception";
+import { drawDebugPaths } from "../debug/paths";
 import { Bullet } from "../entities/Bullet";
 import { type Enemy, EnemyState } from "../entities/Enemy";
-import { MeleeEnemy } from "../entities/MeleeEnemy";
-import { Player } from "../entities/Player";
-import { ShooterEnemy } from "../entities/ShooterEnemy";
-import { SmartBot } from "../entities/SmartBot";
+import type { Player } from "../entities/Player";
+import { loadTiledLevel } from "../level/LevelLoader";
 import type { LevelConfig } from "../level/levels";
-import type { WallDef } from "../types";
 import { GAME_OVER_SCENE_KEY } from "./GameOverScene";
 import { LEVEL_SELECT_SCENE_KEY } from "./LevelSelectScene";
 
 export const GAME_SCENE_KEY = "Game";
 export type { LevelConfig };
-
-/** Extract WallDef[] from a Tiled wall layer for LoS checks and pathfinding. */
-function extractWallsFromLayer(wallLayer: Phaser.Tilemaps.TilemapLayer): WallDef[] {
-  const walls: WallDef[] = [];
-  wallLayer.forEachTile((tile) => {
-    if (tile.index !== -1) {
-      walls.push({
-        x: tile.pixelX + tile.width / 2,
-        y: tile.pixelY + tile.height / 2,
-        w: tile.width,
-        h: tile.height,
-      });
-    }
-  });
-  return walls;
-}
 
 export class GameScene extends Phaser.Scene {
   private player!: Player;
@@ -74,13 +46,57 @@ export class GameScene extends Phaser.Scene {
     this.enemyGroup = this.physics.add.group();
     this.pathGraphics = this.add.graphics().setDepth(50);
 
-    // Load level — returns map dimensions for camera/world bounds
-    const { mapW, mapH } = this.loadTiledLevel(this.levelConfig.key);
+    // Загрузка уровня: создаёт игрока, врагов и pathfinder; коллизии/камеру вешаем здесь
+    const level = loadTiledLevel(this, this.levelConfig.key, {
+      playerBullets: this.playerBullets,
+      enemyBullets: this.enemyBullets,
+      enemyGroup: this.enemyGroup,
+    });
+    this.player = level.player;
+    this.pathfinder = level.pathfinder;
+    this.hasEnemies = this.enemyGroup.getLength() > 0;
 
     // Статичная дебаг-сетка pathfinding: рисуется один раз, видимость — по F1
     this.gridGraphics = this.add.graphics().setDepth(40).setVisible(false);
-    drawPathGrid(this.gridGraphics, this.pathfinder, mapW, mapH);
+    drawPathGrid(this.gridGraphics, this.pathfinder, level.mapW, level.mapH);
 
+    this.setupCollisions(level.wallLayer);
+
+    this.events.on("packAlert", (x: number, y: number) => {
+      for (const obj of this.enemyGroup.getChildren()) {
+        const e = obj as Enemy;
+        if (e.state === EnemyState.IDLE) {
+          const d = Phaser.Math.Distance.Between(x, y, e.x, e.y);
+          if (d < PACK_ALERT_RADIUS) {
+            e.state = EnemyState.CHASE;
+          }
+        }
+      }
+    });
+
+    this.cameras.main.startFollow(this.player);
+    this.cameras.main.setBounds(0, 0, level.mapW, level.mapH);
+
+    this.events.once("playerDied", () => {
+      this.gameOver = true;
+      this.scene.start(GAME_OVER_SCENE_KEY, { win: false });
+    });
+
+    this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.ESC).once("down", () => {
+      this.scene.start(LEVEL_SELECT_SCENE_KEY);
+    });
+
+    this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.F1).on("down", () => {
+      this.debugPaths = !this.debugPaths;
+      this.gridGraphics.setVisible(this.debugPaths);
+      if (!this.debugPaths) this.pathGraphics.clear();
+    });
+
+    new DebugOverlay(this, this.player, this.enemyGroup);
+  }
+
+  /** Навешивает все коллизии: враг↔враг, пули↔цели, всё↔стены (если стены есть). */
+  private setupCollisions(wallLayer: Phaser.Tilemaps.TilemapLayer | null): void {
     // Enemy↔enemy collision (mode-independent)
     this.physics.add.collider(this.enemyGroup, this.enemyGroup);
 
@@ -106,37 +122,15 @@ export class GameScene extends Phaser.Scene {
       this,
     );
 
-    this.events.on("packAlert", (x: number, y: number) => {
-      for (const obj of this.enemyGroup.getChildren()) {
-        const e = obj as Enemy;
-        if (e.state === EnemyState.IDLE) {
-          const d = Phaser.Math.Distance.Between(x, y, e.x, e.y);
-          if (d < PACK_ALERT_RADIUS) {
-            e.state = EnemyState.CHASE;
-          }
-        }
-      }
+    if (!wallLayer) return;
+    this.physics.add.collider(this.player, wallLayer);
+    this.physics.add.collider(this.enemyGroup, wallLayer);
+    this.physics.add.collider(this.playerBullets, wallLayer, (bullet) => {
+      (bullet as Phaser.GameObjects.GameObject).destroy();
     });
-
-    this.cameras.main.startFollow(this.player);
-    this.cameras.main.setBounds(0, 0, mapW, mapH);
-
-    this.events.once("playerDied", () => {
-      this.gameOver = true;
-      this.scene.start(GAME_OVER_SCENE_KEY, { win: false });
+    this.physics.add.collider(this.enemyBullets, wallLayer, (bullet) => {
+      (bullet as Phaser.GameObjects.GameObject).destroy();
     });
-
-    this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.ESC).once("down", () => {
-      this.scene.start(LEVEL_SELECT_SCENE_KEY);
-    });
-
-    this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.F1).on("down", () => {
-      this.debugPaths = !this.debugPaths;
-      this.gridGraphics.setVisible(this.debugPaths);
-      if (!this.debugPaths) this.pathGraphics.clear();
-    });
-
-    new DebugOverlay(this, this.player, this.enemyGroup);
   }
 
   override update(): void {
@@ -153,149 +147,12 @@ export class GameScene extends Phaser.Scene {
       this.scene.start(GAME_OVER_SCENE_KEY, { win: true });
     }
 
-    if (this.debugPaths) this.drawDebugPaths();
-  }
-
-  private drawDebugPaths(): void {
-    this.pathGraphics.clear();
-
-    for (const obj of this.enemyGroup.getChildren()) {
-      const enemy = obj as Enemy;
-      if (!enemy.active) continue;
-
-      const lineColor =
-        enemy instanceof MeleeEnemy
-          ? COLOR_DEBUG_MELEE
-          : enemy instanceof SmartBot
-            ? COLOR_DEBUG_SMART
-            : COLOR_DEBUG_SHOOTER;
-      const waypoints = enemy.getRemainingWaypoints();
-
-      if (waypoints.length > 0) {
-        this.pathGraphics.lineStyle(2, lineColor, 0.8);
-        this.pathGraphics.beginPath();
-        this.pathGraphics.moveTo(enemy.x, enemy.y);
-        for (const wp of waypoints) {
-          this.pathGraphics.lineTo(wp.x, wp.y);
-        }
-        this.pathGraphics.strokePath();
-      }
-
-      const target = enemy.getLastPathTarget();
-      if (target) {
-        const cross = 8;
-        this.pathGraphics.lineStyle(2, COLOR_DEBUG_TARGET, 0.9);
-        this.pathGraphics.beginPath();
-        this.pathGraphics.moveTo(target.x - cross, target.y);
-        this.pathGraphics.lineTo(target.x + cross, target.y);
-        this.pathGraphics.moveTo(target.x, target.y - cross);
-        this.pathGraphics.lineTo(target.x, target.y + cross);
-        this.pathGraphics.strokePath();
-      }
-    }
-
-    drawEnemyPerception(
-      this.pathGraphics,
-      this.enemyGroup.getChildren().map((obj) => obj as Enemy),
-      this.player,
-    );
-  }
-
-  /**
-   * Loads a level from a Tiled JSON tilemap.
-   * Requires PreloadScene to have loaded the tileset image and tilemap JSON.
-   * Layers expected: "floor" (visual), "walls" (collision), "spawns" (objects).
-   * Object types in "spawns": "player_start", "melee", "shooter".
-   */
-  private loadTiledLevel(tilemapKey: string): { mapW: number; mapH: number } {
-    const map = this.make.tilemap({ key: tilemapKey });
-    const mapW = map.widthInPixels;
-    const mapH = map.heightInPixels;
-
-    this.physics.world.setBounds(0, 0, mapW, mapH);
-
-    const tileset = map.addTilesetImage("tilesheet_complete", "tiles-kenney");
-    if (!tileset) {
-      console.error("[GameScene] Failed to add tileset 'tilesheet_complete'");
-      return this.fallbackLevel(mapW || MAP_WIDTH, mapH || MAP_HEIGHT);
-    }
-
-    // Floor layer — visual only, no collision
-    map.createLayer("floor", tileset, 0, 0);
-
-    // Wall layer — all placed tiles are solid.
-    // Cast: we use the default (non-GPU) tilemap renderer throughout this project.
-    const wallLayer = map.createLayer(
-      "walls",
-      tileset,
-      0,
-      0,
-    ) as Phaser.Tilemaps.TilemapLayer | null;
-    if (!wallLayer) {
-      console.error("[GameScene] No 'walls' layer found in tilemap");
-      return this.fallbackLevel(mapW, mapH);
-    }
-    wallLayer.setCollisionByExclusion([-1]);
-
-    // Extract geometry for LoS and pathfinding
-    const walls = extractWallsFromLayer(wallLayer);
-    this.pathfinder = new Pathfinder(walls, mapW, mapH);
-
-    // Wall colliders for physics movement
-    // (player is created from spawns, so we set up colliders after spawning)
-    const spawnObjects = map.getObjectLayer("spawns")?.objects ?? [];
-    let playerCreated = false;
-
-    for (const obj of spawnObjects) {
-      const ox = obj.x ?? 100;
-      const oy = obj.y ?? 100;
-      // Tiled stores the identifier in "type" (class) OR "name" depending on workflow.
-      // Support both: fall back to name when type is empty.
-      const spawnId = obj.type || obj.name;
-
-      if (spawnId === "player_start") {
-        this.player = new Player(this, ox, oy, this.playerBullets);
-        playerCreated = true;
-      } else if (spawnId === "melee") {
-        const e = new MeleeEnemy(this, ox, oy, walls);
-        e.setPathfinder(this.pathfinder);
-        this.enemyGroup.add(e);
-      } else if (spawnId === "shooter") {
-        const e = new ShooterEnemy(this, ox, oy, this.enemyBullets, walls);
-        e.setPathfinder(this.pathfinder);
-        this.enemyGroup.add(e);
-      } else if (spawnId === "smart") {
-        const e = new SmartBot(this, ox, oy, this.enemyBullets, this.playerBullets, walls);
-        e.setPathfinder(this.pathfinder);
-        this.enemyGroup.add(e);
-      }
-    }
-
-    if (!playerCreated) {
-      console.warn(
-        "[GameScene] No 'player_start' object in spawns layer — using fallback (100, 100)",
+    if (this.debugPaths) {
+      drawDebugPaths(
+        this.pathGraphics,
+        this.enemyGroup.getChildren().map((obj) => obj as Enemy),
+        this.player,
       );
-      this.player = new Player(this, 100, 100, this.playerBullets);
     }
-    this.hasEnemies = this.enemyGroup.getLength() > 0;
-
-    // Wall physics colliders
-    this.physics.add.collider(this.player, wallLayer);
-    this.physics.add.collider(this.enemyGroup, wallLayer);
-    this.physics.add.collider(this.playerBullets, wallLayer, (bullet) => {
-      (bullet as Phaser.GameObjects.GameObject).destroy();
-    });
-    this.physics.add.collider(this.enemyBullets, wallLayer, (bullet) => {
-      (bullet as Phaser.GameObjects.GameObject).destroy();
-    });
-
-    return { mapW, mapH };
-  }
-
-  /** Emergency fallback: creates a minimal empty arena when tilemap loading fails. */
-  private fallbackLevel(mapW: number, mapH: number): { mapW: number; mapH: number } {
-    this.pathfinder = new Pathfinder([], mapW, mapH);
-    this.player = new Player(this, 100, 100, this.playerBullets);
-    return { mapW, mapH };
   }
 }
