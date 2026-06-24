@@ -10,6 +10,7 @@ import {
   SMART_BOT_HP,
   SMART_BOT_KITE_ADVANCE_DIST,
   SMART_BOT_KITE_RETREAT_DIST,
+  SMART_BOT_LOS_GRACE_MS,
   SMART_BOT_LOW_HP,
   SMART_BOT_REACTION_MS,
   SMART_BOT_RETREAT_COOLDOWN_MS,
@@ -43,6 +44,8 @@ export class SmartBot extends Enemy {
   private readonly lastKnownPos = new Phaser.Math.Vector2(-9999, -9999);
   private prevLos = false;
   private losAcquiredAt = 0;
+  // Когда LoS пропала. NEGATIVE_INFINITY → самое первое обнаружение взводит реакцию.
+  private losLostAt = Number.NEGATIVE_INFINITY;
 
   private strafeSign = 1;
   private strafeFlipTime = 0;
@@ -76,7 +79,14 @@ export class SmartBot extends Enemy {
     this.losCache = this.hasLoS(player);
     if (this.losCache) {
       this.lastKnownPos.set(player.x, player.y);
-      if (!this.prevLos) this.losAcquiredAt = now; // rising edge → отсчёт времени реакции
+      // Взводим реакцию только на настоящую завязку боя: если игрок был невидим
+      // дольше grace. Короткое мигание LoS (заход за угол на доли секунды) реакцию
+      // не перевзводит → темп стрельбы в бою остаётся чисто оружейным.
+      if (!this.prevLos && now - this.losLostAt > SMART_BOT_LOS_GRACE_MS) {
+        this.losAcquiredAt = now;
+      }
+    } else if (this.prevLos) {
+      this.losLostAt = now; // falling edge
     }
     this.prevLos = this.losCache;
 
