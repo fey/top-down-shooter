@@ -106,10 +106,9 @@ Sprite + Arcade Physics body. Управление: WASD (нормализова
 
 **`ShooterEnemy`** (синий):
 - IDLE → CHASE при LoS + агро-дистанции. В CHASE — навигация к позиции игрока.
-- SHOOT при LoS в зоне `SHOOTER_RANGE`: стреляет с кулдауном 1500 мс, кайтит (отступает ближе `SHOOTER_KITE_RETREAT_DIST`, сближается дальше `SHOOTER_KITE_ADVANCE_DIST`).
+- SHOOT при LoS в зоне `SHOOTER_RANGE`: стреляет с кулдауном 1500 мс, кайтит через `kiteAction()` — отступает ближе `SHOOTER_KITE_RETREAT_DIST`, сближается дальше `SHOOTER_KITE_ADVANCE_DIST`, в зоне комфорта между ними движется боком (strafe).
 - SEARCH при потере LoS: идёт к последней известной позиции игрока.
 - LoS кешируется один раз за тик (`losCache`).
-- STRAFE реализован в коде, но отключён (`// FUTURE`).
 
 **`SmartBot`** (зелёный) — соперник **уровня игрока** с продвинутым ИИ в духе ботов Quake 3:
 - Характеристики как у игрока: HP 5, скорость 200, то же оружие `Pistol` (кулдаун 250 мс,
