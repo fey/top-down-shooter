@@ -5,6 +5,7 @@ import { MeleeEnemy } from "../entities/MeleeEnemy";
 import { ShooterEnemy } from "../entities/ShooterEnemy";
 import { SmartBot } from "../entities/SmartBot";
 import type { WallDef } from "../types";
+import { classifySpawn } from "./spawns";
 
 /** Зависимости, нужные врагам при спавне (группы пуль, геометрия стен, навигация). */
 export interface EnemyDeps {
@@ -27,7 +28,7 @@ export function createEnemy(
   deps: EnemyDeps,
 ): Enemy | null {
   let enemy: Enemy | null = null;
-  switch (spawnId) {
+  switch (classifySpawn(spawnId)) {
     case "melee":
       enemy = new MeleeEnemy(scene, x, y, deps.walls);
       break;
@@ -38,6 +39,7 @@ export function createEnemy(
       enemy = new SmartBot(scene, x, y, deps.enemyBullets, deps.playerBullets, deps.walls);
       break;
     default:
+      // "player" обрабатывается в LevelLoader, неизвестные — игнорируются
       return null;
   }
   enemy.setPathfinder(deps.pathfinder);

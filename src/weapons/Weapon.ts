@@ -1,4 +1,5 @@
 import type Phaser from "phaser";
+import { canFire } from "./cooldown";
 
 export abstract class Weapon {
   protected readonly cooldown: number;
@@ -17,7 +18,7 @@ export abstract class Weapon {
     angle: number,
     now: number,
   ): void {
-    if (now - this.lastFired < this.cooldown) return;
+    if (!canFire(now, this.lastFired, this.cooldown)) return;
     this.lastFired = now;
     this.spawnBullets(bulletGroup, x, y, angle);
   }

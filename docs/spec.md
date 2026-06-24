@@ -19,8 +19,15 @@ make preview    # vite preview
 make check      # Biome lint + format check
 make format     # Biome format --write
 make typecheck  # tsc --noEmit
+make test       # vitest run — unit-тесты чистого ядра
 make clean      # rm -rf dist
 ```
+
+**Тестируемость.** Ошибкоопасная логика (поиск пути, боевые решения, геометрия LoS,
+отталкивание от стен, кулдаун, парсинг уровня) вынесена в чистые Phaser-free модули
+(`src/ai/grid.ts`, `src/ai/geometry.ts`, `src/ai/separation.ts`, `src/ai/behaviors/`,
+`src/level/spawns.ts`) и покрыта unit-тестами vitest. Классы-сущности — тонкая оболочка
+над этим ядром. Геймплей по-прежнему проверяется вручную.
 
 ## Структура файлов
 

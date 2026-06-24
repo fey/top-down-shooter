@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { kiteAction } from "../ai/behaviors/combat";
 import {
   ENEMY_AGGRO_RANGE,
   SHOOTER_BULLET_SPEED,
@@ -69,15 +70,19 @@ export class ShooterEnemy extends Enemy {
           break;
         }
         // кайтинг: держать дистанцию SHOOTER_RANGE ± буфер
-        if (dist < SHOOTER_KITE_RETREAT_DIST) {
-          // игрок слишком близко — отступать по прямой от него, продолжая стрелять
-          this.retreatFrom(player, SHOOTER_ENEMY_SPEED);
-        } else if (dist > SHOOTER_KITE_ADVANCE_DIST) {
-          // игрок слишком далеко — сблизиться через pathfinding (обходит стены)
-          this.moveAlongPath(new Phaser.Math.Vector2(player.x, player.y), SHOOTER_ENEMY_SPEED);
-        } else {
-          // непрерывное боковое движение
-          this.applyStrafe(player, SHOOTER_ENEMY_SPEED, SHOOTER_STRAFE_FLIP_MS, now);
+        switch (kiteAction(dist, SHOOTER_KITE_RETREAT_DIST, SHOOTER_KITE_ADVANCE_DIST)) {
+          case "retreat":
+            // игрок слишком близко — отступать по прямой от него, продолжая стрелять
+            this.retreatFrom(player, SHOOTER_ENEMY_SPEED);
+            break;
+          case "advance":
+            // игрок слишком далеко — сблизиться через pathfinding (обходит стены)
+            this.moveAlongPath(new Phaser.Math.Vector2(player.x, player.y), SHOOTER_ENEMY_SPEED);
+            break;
+          case "strafe":
+            // непрерывное боковое движение
+            this.applyStrafe(player, SHOOTER_ENEMY_SPEED, SHOOTER_STRAFE_FLIP_MS, now);
+            break;
         }
         // LoS гарантирован проверкой выше — стреляем без доп. проверки
         if (now - this.lastFiredAt >= SHOOTER_ENEMY_FIRE_COOLDOWN) {
