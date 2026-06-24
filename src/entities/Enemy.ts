@@ -31,6 +31,14 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
   /** LoS к игроку, кэшируется наследниками в начале каждого tick(). */
   protected losCache = false;
 
+  /** Последняя позиция, где игрок был виден. Заполняется через rememberLastKnown(). */
+  protected readonly lastKnownPos = new Phaser.Math.Vector2();
+  protected hasLastKnown = false;
+
+  // Боковое маневрирование (circle-strafe) — общее для стреляющих врагов.
+  protected strafeSign = 1;
+  protected strafeFlipTime = 0;
+
   private waypoints: Phaser.Math.Vector2[] = [];
   private waypointIndex = 0;
   private readonly lastPathTarget = new Phaser.Math.Vector2();
@@ -111,6 +119,37 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
       this.scene.events.emit("enemyDied", this);
       this.destroy();
     }
+  }
+
+  /** Запоминает последнюю известную позицию игрока (вызывать, когда есть LoS). */
+  protected rememberLastKnown(x: number, y: number): void {
+    this.lastKnownPos.set(x, y);
+    this.hasLastKnown = true;
+  }
+
+  /** Поворачивает спрайт лицом к точке (восток спрайта = угол 0). */
+  protected faceTarget(x: number, y: number): void {
+    this.setRotation(Phaser.Math.Angle.Between(this.x, this.y, x, y));
+  }
+
+  /** Отступление по прямой от игрока, не разворачиваясь. */
+  protected retreatFrom(player: Player, speed: number): void {
+    const away = Phaser.Math.Angle.Between(player.x, player.y, this.x, this.y);
+    this.setVelocity(Math.cos(away) * speed, Math.sin(away) * speed);
+  }
+
+  /**
+   * Боковое движение (circle-strafe) перпендикулярно направлению на игрока.
+   * Знак направления переворачивается каждые flipPeriodMs мс.
+   */
+  protected applyStrafe(player: Player, speed: number, flipPeriodMs: number, now: number): void {
+    if (now >= this.strafeFlipTime) {
+      this.strafeSign *= -1;
+      this.strafeFlipTime = now + flipPeriodMs;
+    }
+    const angleToPlayer = Phaser.Math.Angle.Between(this.x, this.y, player.x, player.y);
+    const perp = angleToPlayer + this.strafeSign * (Math.PI / 2);
+    this.setVelocity(Math.cos(perp) * speed, Math.sin(perp) * speed);
   }
 
   moveAlongPath(target: Phaser.Math.Vector2, speed: number): void {

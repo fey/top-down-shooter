@@ -46,14 +46,10 @@ export class SmartBot extends Enemy {
   private readonly playerBullets: Phaser.Physics.Arcade.Group;
   private readonly weapon: Weapon;
 
-  private readonly lastKnownPos = new Phaser.Math.Vector2(-9999, -9999);
   private prevLos = false;
   private losAcquiredAt = 0;
   // Когда LoS пропала. NEGATIVE_INFINITY → самое первое обнаружение взводит реакцию.
   private losLostAt = Number.NEGATIVE_INFINITY;
-
-  private strafeSign = 1;
-  private strafeFlipTime = 0;
 
   private readonly dodgeVec = new Phaser.Math.Vector2();
   private dodgeUntil = 0;
@@ -90,7 +86,7 @@ export class SmartBot extends Enemy {
     const now = this.scene.time.now;
     this.losCache = this.hasLoS(player);
     if (this.losCache) {
-      this.lastKnownPos.set(player.x, player.y);
+      this.rememberLastKnown(player.x, player.y);
       // Взводим реакцию только на настоящую завязку боя: если игрок был невидим
       // дольше grace. Короткое мигание LoS (заход за угол на доли секунды) реакцию
       // не перевзводит → темп стрельбы в бою остаётся чисто оружейным.
@@ -187,11 +183,11 @@ export class SmartBot extends Enemy {
     } else if (this.tryStartDodge(now)) {
       this.setVelocity(this.dodgeVec.x, this.dodgeVec.y);
     } else if (dist < SMART_BOT_KITE_RETREAT_DIST) {
-      this.retreatFrom(player);
+      this.retreatFrom(player, SMART_BOT_SPEED);
     } else if (dist > SMART_BOT_KITE_ADVANCE_DIST) {
       this.moveAlongPath(new Phaser.Math.Vector2(player.x, player.y), SMART_BOT_SPEED);
     } else {
-      this.applyStrafe(player, now);
+      this.applyStrafe(player, SMART_BOT_SPEED, SMART_BOT_STRAFE_FLIP_MS, now);
     }
 
     // 2. Прицел с упреждением + огонь (поворот без разброса, разброс — только в выстрел).
@@ -251,25 +247,6 @@ export class SmartBot extends Enemy {
       return true;
     }
     return false;
-  }
-
-  private applyStrafe(player: Player, now: number): void {
-    if (now >= this.strafeFlipTime) {
-      this.strafeSign *= -1;
-      this.strafeFlipTime = now + SMART_BOT_STRAFE_FLIP_MS;
-    }
-    const angleToPlayer = Phaser.Math.Angle.Between(this.x, this.y, player.x, player.y);
-    const perp = angleToPlayer + this.strafeSign * (Math.PI / 2);
-    this.setVelocity(Math.cos(perp) * SMART_BOT_SPEED, Math.sin(perp) * SMART_BOT_SPEED);
-  }
-
-  private retreatFrom(player: Player): void {
-    const away = Phaser.Math.Angle.Between(player.x, player.y, this.x, this.y);
-    this.setVelocity(Math.cos(away) * SMART_BOT_SPEED, Math.sin(away) * SMART_BOT_SPEED);
-  }
-
-  private faceTarget(x: number, y: number): void {
-    this.setRotation(Phaser.Math.Angle.Between(this.x, this.y, x, y));
   }
 
   /** Переход в поиск после потери LoS: идём к lastKnownPos, район ещё не обыскиваем. */

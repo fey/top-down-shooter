@@ -17,7 +17,6 @@ export class MeleeEnemy extends Enemy {
   private lastAttackTime = 0;
   private prevLosCache = false;
   private searchEnteredTime = 0;
-  private readonly lastKnownPos = new Phaser.Math.Vector2(-9999, -9999);
 
   constructor(scene: Phaser.Scene, x: number, y: number, walls: WallDef[]) {
     super(scene, x, y, "enemy_melee", MELEE_ENEMY_HP);
@@ -25,11 +24,11 @@ export class MeleeEnemy extends Enemy {
   }
 
   tick(player: Player): void {
-    this.setRotation(Phaser.Math.Angle.Between(this.x, this.y, player.x, player.y));
+    this.faceTarget(player.x, player.y);
     this.prevLosCache = this.losCache;
     this.losCache = this.hasLoS(player);
     if (this.losCache) {
-      this.lastKnownPos.set(player.x, player.y);
+      this.rememberLastKnown(player.x, player.y);
     }
 
     const dist = Phaser.Math.Distance.Between(this.x, this.y, player.x, player.y);
@@ -50,9 +49,9 @@ export class MeleeEnemy extends Enemy {
           if (dist < MELEE_ATTACK_RANGE) this.state = EnemyState.ATTACK;
         } else {
           // LoS потерян — идём к последней известной позиции игрока
-          if (this.lastKnownPos.x === -9999) {
+          if (!this.hasLastKnown) {
             // Агро пришло через packAlert — брать текущую позицию как fallback
-            this.lastKnownPos.set(player.x, player.y);
+            this.rememberLastKnown(player.x, player.y);
           }
           // При только что потерянном LoS — принудительно пересчитать путь,
           // чтобы не использовать устаревший маршрут к игроку
