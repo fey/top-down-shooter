@@ -342,6 +342,29 @@ export class Pathfinder {
   }
 
   /**
+   * Returns the world-space centre of a random walkable cell (for AI roaming/patrol).
+   * Tries a few random cells, then falls back to a full grid scan; null only if the
+   * entire grid is blocked.
+   */
+  randomWalkableWorld(): Phaser.Math.Vector2 | null {
+    for (let attempt = 0; attempt < 30; attempt++) {
+      const col = Math.floor(Math.random() * this.cols);
+      const row = Math.floor(Math.random() * this.rows);
+      if (this.grid[row]?.[col]) return this.cellToWorld({ col, row });
+    }
+    // Fallback: collect all walkable cells and pick one (rare — map is mostly walls)
+    const walkable: Cell[] = [];
+    for (let row = 0; row < this.rows; row++) {
+      for (let col = 0; col < this.cols; col++) {
+        if (this.grid[row]?.[col]) walkable.push({ col, row });
+      }
+    }
+    if (walkable.length === 0) return null;
+    const pick = walkable[Math.floor(Math.random() * walkable.length)];
+    return pick ? this.cellToWorld(pick) : null;
+  }
+
+  /**
    * Returns the world-space centre of the nearest walkable cell to (x, y),
    * or null if the entire grid is blocked (shouldn't happen in practice).
    */

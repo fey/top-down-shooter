@@ -15,6 +15,7 @@ import type { Player } from "./Player";
 
 export enum EnemyState {
   IDLE = "IDLE",
+  PATROL = "PATROL",
   CHASE = "CHASE",
   ATTACK = "ATTACK",
   SHOOT = "SHOOT",

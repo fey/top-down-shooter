@@ -107,8 +107,12 @@ Sprite + Arcade Physics body. Управление: WASD (нормализова
 **`SmartBot`** (зелёный) — соперник **уровня игрока** с продвинутым ИИ в духе ботов Quake 3:
 - Характеристики как у игрока: HP 5, скорость 200, то же оружие `Pistol` (кулдаун 250 мс,
   скорость пули 600), стреляет в группу `enemyBullets`.
-- Состояния: `IDLE → CHASE → SHOOT → SEARCH` (поверх общего `EnemyState`), плюс отдельный режим
-  отхода в укрытие, перекрывающий автомат.
+- Состояния: `PATROL → CHASE → SHOOT → SEARCH → PATROL` (поверх общего `EnemyState`), плюс
+  отдельный режим отхода в укрытие, перекрывающий автомат.
+- **Патрулирование** (`PATROL`, стартовое состояние): бот не простаивает, а роумит по карте —
+  идёт к случайной проходимой точке (`Pathfinder.randomWalkableWorld`, дистанция ≥
+  `SMART_BOT_PATROL_MIN_DIST`), по достижении выбирает новую. При обнаружении игрока
+  (LoS + `SMART_BOT_AGGRO_RANGE`) → `CHASE`.
 - **Упреждающий прицел**: целится в экстраполированную позицию игрока (`pos + velocity·dist/bulletSpeed`).
   Модель «честности»: задержка реакции `SMART_BOT_REACTION_MS` перед открытием огня + случайный
   разброс `SMART_BOT_AIM_SPREAD` на каждый выстрел (поворот корпуса — без разброса). Задержка
@@ -121,6 +125,9 @@ Sprite + Arcade Physics body. Управление: WASD (нормализова
 - **Тактика укрытий**: при HP ≤ `SMART_BOT_LOW_HP` ищет ближайшую проходимую точку без LoS к игроку
   (`Pathfinder` + геометрия стен) и уходит туда, не стреляя; затем возвращается в бой. Лечения в
   прототипе нет, поэтому отход однократный с кулдауном `SMART_BOT_RETREAT_COOLDOWN_MS`.
+- **Поиск** (`SEARCH`, потеря LoS): идёт к последней увиденной позиции (`lastKnownPos`); дойдя,
+  не замирает, а обыскивает район `SMART_BOT_SEARCH_DURATION` мс — ходит по случайным проходимым
+  точкам в радиусе `SMART_BOT_SEARCH_RADIUS`. Вернулась LoS → бой; по таймауту → `PATROL`.
 - Спавн через объект `smart` в Tiled-слое `spawns`; попадает в общий `enemyGroup`.
 
 ### Уровни
@@ -178,6 +185,9 @@ Sprite + Arcade Physics body. Управление: WASD (нормализова
 | `SMART_BOT_STRAFE_FLIP_MS` | 800 мс | период смены направления strafe |
 | `SMART_BOT_RETREAT_MS` | 1800 мс | макс. длительность отхода |
 | `SMART_BOT_RETREAT_COOLDOWN_MS` | 5000 мс | пауза перед следующим отходом |
+| `SMART_BOT_PATROL_MIN_DIST` | 350 px | мин. дистанция новой точки патруля |
+| `SMART_BOT_SEARCH_DURATION` | 4000 мс | обыск района у lastKnownPos |
+| `SMART_BOT_SEARCH_RADIUS` | 250 px | радиус разброса точек обыска |
 | `ENEMY_AGGRO_RANGE` | 250 px | |
 | `PACK_ALERT_RADIUS` | 300 px | радиус оповещения союзников |
 | `MELEE_ATTACK_RANGE` | 50 px | |

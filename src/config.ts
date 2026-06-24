@@ -47,6 +47,9 @@ export const SMART_BOT_LOW_HP = 2; // порог HP для ухода в укр�
 export const SMART_BOT_STRAFE_FLIP_MS = 800; // период смены направления circle-strafe
 export const SMART_BOT_RETREAT_MS = 1800; // макс. длительность отхода в укрытие
 export const SMART_BOT_RETREAT_COOLDOWN_MS = 5000; // пауза перед следующим отходом (нет лечения — иначе вечно прячется)
+export const SMART_BOT_PATROL_MIN_DIST = 350; // мин. дистанция новой точки патруля от текущей
+export const SMART_BOT_SEARCH_DURATION = 4000; // мс обыска района у lastKnownPos перед возвратом к патрулю
+export const SMART_BOT_SEARCH_RADIUS = 250; // радиус разброса точек обыска вокруг lastKnownPos
 
 export const ENEMY_AGGRO_RANGE = 250;
 export const PACK_ALERT_RADIUS = 300;
