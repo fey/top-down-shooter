@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { stuckDecision } from "../ai/behaviors/navigation";
 import { anyWallBlocks } from "../ai/geometry";
 import type { Pathfinder } from "../ai/Pathfinder";
 import { wallSeparationForce } from "../ai/separation";
@@ -178,18 +179,18 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
       this.stuckCheckTime = now;
     } else if (now - this.stuckCheckTime > STUCK_TIME_MS) {
       const moved = Phaser.Math.Distance.BetweenPoints(this, this.stuckCheckPos);
-      if (moved < STUCK_MOVE_THRESHOLD) {
-        if (this.stuckRecoveryStage === 0) {
-          // Stage 1: skip current waypoint and try the next one
-          this.waypointIndex = Math.min(this.waypointIndex + 1, this.waypoints.length - 1);
-          this.stuckRecoveryStage = 1;
-        } else {
-          // Stage 2: force a full repath from current position
-          this.recalcPath(target);
-          this.stuckRecoveryStage = 0;
-        }
-      } else {
-        this.stuckRecoveryStage = 0; // made real progress, reset recovery stage
+      const { action, nextStage } = stuckDecision(
+        moved,
+        this.stuckRecoveryStage,
+        STUCK_MOVE_THRESHOLD,
+      );
+      this.stuckRecoveryStage = nextStage;
+      if (action === "skip") {
+        // skip current waypoint and try the next one
+        this.waypointIndex = Math.min(this.waypointIndex + 1, this.waypoints.length - 1);
+      } else if (action === "repath") {
+        // force a full repath from current position
+        this.recalcPath(target);
       }
       this.stuckCheckPos.set(this.x, this.y);
       this.stuckCheckTime = now;
