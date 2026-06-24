@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { evaluateDodge, kiteAction, predictAimAngle } from "../ai/behaviors/combat";
+import { anyWallBlocks } from "../ai/geometry";
 import {
   BULLET_SPEED,
   ENEMY_BODY_RADIUS,
@@ -409,16 +410,6 @@ export class SmartBot extends Enemy {
   /** true, если хотя бы одна стена пересекает отрезок (ax,ay)→(bx,by). */
   private losBlocked(ax: number, ay: number, bx: number, by: number): boolean {
     if (this.walls === null) return false;
-    const line = new Phaser.Geom.Line(ax, ay, bx, by);
-    for (const wall of this.walls) {
-      const bounds = new Phaser.Geom.Rectangle(
-        wall.x - wall.w / 2,
-        wall.y - wall.h / 2,
-        wall.w,
-        wall.h,
-      );
-      if (Phaser.Geom.Intersects.LineToRectangle(line, bounds)) return true;
-    }
-    return false;
+    return anyWallBlocks(ax, ay, bx, by, this.walls);
   }
 }

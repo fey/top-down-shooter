@@ -1,5 +1,7 @@
 import Phaser from "phaser";
+import { anyWallBlocks } from "../ai/geometry";
 import type { Pathfinder } from "../ai/Pathfinder";
+import { wallSeparationForce } from "../ai/separation";
 import {
   ENEMY_BODY_RADIUS,
   ENEMY_SPRITE_SCALE,
@@ -72,17 +74,7 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
 
   protected hasLoS(player: Player): boolean {
     if (this.walls === null) return true;
-    const line = new Phaser.Geom.Line(this.x, this.y, player.x, player.y);
-    for (const wall of this.walls) {
-      const bounds = new Phaser.Geom.Rectangle(
-        wall.x - wall.w / 2,
-        wall.y - wall.h / 2,
-        wall.w,
-        wall.h,
-      );
-      if (Phaser.Geom.Intersects.LineToRectangle(line, bounds)) return false;
-    }
-    return true;
+    return !anyWallBlocks(this.x, this.y, player.x, player.y, this.walls);
   }
 
   /** Текущее закэшированное LoS-состояние — для дебаг-отрисовки. */
@@ -227,34 +219,17 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
    * Weight = 1/distance (linear, not squared — keeps the force gentle).
    */
   private getWallSeparationForce(): Phaser.Math.Vector2 {
-    if (!this.pathfinder) return new Phaser.Math.Vector2(0, 0);
-
-    this.wallForceAccum.set(0, 0);
-    const sampleDist = PATH_CELL_SIZE;
-
-    for (let i = 0; i < 8; i++) {
-      const angle = (i * Math.PI) / 4;
-      const sx = this.x + Math.cos(angle) * sampleDist;
-      const sy = this.y + Math.sin(angle) * sampleDist;
-      const { col, row } = this.pathfinder.worldToGridCell(sx, sy);
-
-      if (!this.pathfinder.isWalkable(col, row)) {
-        // Cell centre in world space
-        const cellCx = col * PATH_CELL_SIZE + PATH_CELL_SIZE / 2;
-        const cellCy = row * PATH_CELL_SIZE + PATH_CELL_SIZE / 2;
-        const dx = this.x - cellCx;
-        const dy = this.y - cellCy;
-        const dist = Math.max(1, Math.sqrt(dx * dx + dy * dy));
-        // Repulsion: direction from cell toward enemy, weighted by 1/dist
-        this.wallForceAccum.x += (dx / dist) * (1 / dist);
-        this.wallForceAccum.y += (dy / dist) * (1 / dist);
-      }
-    }
-
-    if (this.wallForceAccum.lengthSq() > 0) {
-      this.wallForceAccum.normalize().scale(WALL_SEPARATION_STRENGTH);
-    }
-    return new Phaser.Math.Vector2(this.wallForceAccum.x, this.wallForceAccum.y);
+    if (!this.pathfinder) return this.wallForceAccum.set(0, 0);
+    const pf = this.pathfinder;
+    const force = wallSeparationForce(
+      this.x,
+      this.y,
+      PATH_CELL_SIZE,
+      PATH_CELL_SIZE,
+      WALL_SEPARATION_STRENGTH,
+      (col, row) => pf.isWalkable(col, row),
+    );
+    return this.wallForceAccum.set(force.x, force.y);
   }
 
   private recalcPath(target: Phaser.Math.Vector2): void {

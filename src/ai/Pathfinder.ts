@@ -24,11 +24,6 @@ export class Pathfinder {
     return this.g.isWalkable(col, row);
   }
 
-  /** Converts a world-space position to its grid cell coordinates. */
-  worldToGridCell(x: number, y: number): { col: number; row: number } {
-    return this.g.worldToCell(x, y);
-  }
-
   /** Returns true if the world-space point (x, y) lies in a walkable grid cell. */
   isWalkableAt(x: number, y: number): boolean {
     return this.g.isWalkableAt(x, y);
