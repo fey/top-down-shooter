@@ -4,6 +4,7 @@ import { MAP_HEIGHT, MAP_WIDTH } from "../config";
 import { Player } from "../entities/Player";
 import type { WallDef } from "../types";
 import { createEnemy } from "./EnemyFactory";
+import { classifySpawn, tileToWall } from "./spawns";
 
 /** Результат загрузки уровня. wallLayer === null при аварийном fallback. */
 export interface LoadedLevel {
@@ -25,14 +26,8 @@ export interface LevelDeps {
 function extractWallsFromLayer(wallLayer: Phaser.Tilemaps.TilemapLayer): WallDef[] {
   const walls: WallDef[] = [];
   wallLayer.forEachTile((tile) => {
-    if (tile.index !== -1) {
-      walls.push({
-        x: tile.pixelX + tile.width / 2,
-        y: tile.pixelY + tile.height / 2,
-        w: tile.width,
-        h: tile.height,
-      });
-    }
+    const wall = tileToWall(tile);
+    if (wall) walls.push(wall);
   });
   return walls;
 }
@@ -92,7 +87,7 @@ export function loadTiledLevel(
     // Support both: fall back to name when type is empty.
     const spawnId = obj.type || obj.name;
 
-    if (spawnId === "player_start") {
+    if (classifySpawn(spawnId) === "player") {
       player = new Player(scene, ox, oy, deps.playerBullets);
       continue;
     }
