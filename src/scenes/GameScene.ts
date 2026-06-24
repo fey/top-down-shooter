@@ -1,6 +1,15 @@
 import Phaser from "phaser";
 import { Pathfinder } from "../ai/Pathfinder";
-import { MAP_HEIGHT, MAP_WIDTH, PACK_ALERT_RADIUS } from "../config";
+import {
+  COLOR_BG_GAME,
+  COLOR_DEBUG_MELEE,
+  COLOR_DEBUG_SHOOTER,
+  COLOR_DEBUG_SMART,
+  COLOR_DEBUG_TARGET,
+  MAP_HEIGHT,
+  MAP_WIDTH,
+  PACK_ALERT_RADIUS,
+} from "../config";
 import { DebugOverlay } from "../debug/DebugOverlay";
 import { drawPathGrid } from "../debug/grid";
 import { drawEnemyPerception } from "../debug/perception";
@@ -14,11 +23,6 @@ import type { LevelConfig } from "../level/levels";
 import type { WallDef } from "../types";
 import { GAME_OVER_SCENE_KEY } from "./GameOverScene";
 import { LEVEL_SELECT_SCENE_KEY } from "./LevelSelectScene";
-
-const DEBUG_MELEE_COLOR = 0xff4444;
-const DEBUG_SHOOTER_COLOR = 0x4444ff;
-const DEBUG_SMART_COLOR = 0x44ff88;
-const DEBUG_TARGET_COLOR = 0xffff00;
 
 export const GAME_SCENE_KEY = "Game";
 export type { LevelConfig };
@@ -63,7 +67,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.cameras.main.setBackgroundColor("#1a1a1a");
+    this.cameras.main.setBackgroundColor(COLOR_BG_GAME);
 
     this.playerBullets = this.physics.add.group({ classType: Bullet, runChildUpdate: true });
     this.enemyBullets = this.physics.add.group({ classType: Bullet, runChildUpdate: true });
@@ -161,10 +165,10 @@ export class GameScene extends Phaser.Scene {
 
       const lineColor =
         enemy instanceof MeleeEnemy
-          ? DEBUG_MELEE_COLOR
+          ? COLOR_DEBUG_MELEE
           : enemy instanceof SmartBot
-            ? DEBUG_SMART_COLOR
-            : DEBUG_SHOOTER_COLOR;
+            ? COLOR_DEBUG_SMART
+            : COLOR_DEBUG_SHOOTER;
       const waypoints = enemy.getRemainingWaypoints();
 
       if (waypoints.length > 0) {
@@ -180,7 +184,7 @@ export class GameScene extends Phaser.Scene {
       const target = enemy.getLastPathTarget();
       if (target) {
         const cross = 8;
-        this.pathGraphics.lineStyle(2, DEBUG_TARGET_COLOR, 0.9);
+        this.pathGraphics.lineStyle(2, COLOR_DEBUG_TARGET, 0.9);
         this.pathGraphics.beginPath();
         this.pathGraphics.moveTo(target.x - cross, target.y);
         this.pathGraphics.lineTo(target.x + cross, target.y);

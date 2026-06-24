@@ -9,6 +9,7 @@ import {
   SHOOTER_KITE_ADVANCE_DIST,
   SHOOTER_KITE_RETREAT_DIST,
   SHOOTER_RANGE,
+  SHOOTER_STRAFE_FLIP_MS,
   WAYPOINT_REACH_DIST,
 } from "../config";
 import type { WallDef } from "../types";
@@ -127,13 +128,13 @@ export class ShooterEnemy extends Enemy {
   private enterStrafe(now: number): void {
     this.state = EnemyState.STRAFE;
     this.strafeSign = Math.random() < 0.5 ? 1 : -1;
-    this.strafeFlipTime = now + 1000;
+    this.strafeFlipTime = now + SHOOTER_STRAFE_FLIP_MS;
   }
 
   private applyStrafe(player: Player, now: number): void {
     if (now >= this.strafeFlipTime) {
       this.strafeSign *= -1;
-      this.strafeFlipTime = now + 1000;
+      this.strafeFlipTime = now + SHOOTER_STRAFE_FLIP_MS;
     }
     const angleToPlayer = Phaser.Math.Angle.Between(this.x, this.y, player.x, player.y);
     const perpAngle = angleToPlayer + this.strafeSign * (Math.PI / 2);

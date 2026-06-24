@@ -33,7 +33,8 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
 
   private waypoints: Phaser.Math.Vector2[] = [];
   private waypointIndex = 0;
-  private readonly lastPathTarget = new Phaser.Math.Vector2(-9999, -9999);
+  private readonly lastPathTarget = new Phaser.Math.Vector2();
+  private hasPathTarget = false;
 
   // Stuck detection state
   private readonly stuckCheckPos = new Phaser.Math.Vector2();
@@ -87,8 +88,7 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
   }
 
   getLastPathTarget(): Phaser.Math.Vector2 | null {
-    if (this.lastPathTarget.x === -9999 && this.lastPathTarget.y === -9999) return null;
-    return this.lastPathTarget;
+    return this.hasPathTarget ? this.lastPathTarget : null;
   }
 
   /**
@@ -97,7 +97,7 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
    * abruptly (e.g., switching from the player to lastKnownPos on LoS loss).
    */
   invalidatePath(): void {
-    this.lastPathTarget.set(-9999, -9999);
+    this.hasPathTarget = false;
     this.waypoints = [];
     this.waypointIndex = 0;
     this.stuckCheckTime = 0;
@@ -220,6 +220,7 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
 
   private recalcPath(target: Phaser.Math.Vector2): void {
     this.lastPathTarget.copy(target);
+    this.hasPathTarget = true;
     this.waypointIndex = 0;
     this.stuckCheckTime = 0; // reset stuck detection for the new path
     if (this.pathfinder) {

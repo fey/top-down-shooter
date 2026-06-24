@@ -2,10 +2,12 @@ import Phaser from "phaser";
 import {
   BULLET_SPEED,
   ENEMY_BODY_RADIUS,
+  PATH_CELL_SIZE,
   SMART_BOT_AGGRO_RANGE,
   SMART_BOT_AIM_SPREAD,
   SMART_BOT_COMBAT_RANGE,
   SMART_BOT_DODGE_DURATION,
+  SMART_BOT_DODGE_LATERAL_MULT,
   SMART_BOT_DODGE_RADIUS,
   SMART_BOT_HP,
   SMART_BOT_KITE_ADVANCE_DIST,
@@ -30,7 +32,7 @@ import { Enemy, EnemyState } from "./Enemy";
 import type { Player } from "./Player";
 
 /** Боковой зазор, при котором летящая пуля считается угрозой (≈ диаметр тела бота). */
-const DODGE_LATERAL_THRESHOLD = ENEMY_BODY_RADIUS * 1.8;
+const DODGE_LATERAL_THRESHOLD = ENEMY_BODY_RADIUS * SMART_BOT_DODGE_LATERAL_MULT;
 
 /**
  * Умный бот — соперник уровня игрока (то же HP/скорость/оружие), но с продвинутым ИИ
@@ -410,7 +412,7 @@ export class SmartBot extends Enemy {
     let best: Phaser.Math.Vector2 | null = null;
     let bestDist = Number.POSITIVE_INFINITY;
     for (let ring = 2; ring <= 4; ring++) {
-      const radius = ring * 64;
+      const radius = ring * PATH_CELL_SIZE;
       for (let i = 0; i < 16; i++) {
         const a = (i * Math.PI) / 8;
         const cx = this.x + Math.cos(a) * radius;
