@@ -75,12 +75,11 @@ export class SmartBot extends Enemy {
     playerBullets: Phaser.Physics.Arcade.Group,
     walls: WallDef[],
   ) {
-    super(scene, x, y, "enemy_shooter", SMART_BOT_HP);
+    super(scene, x, y, "enemy_smart", SMART_BOT_HP);
     this.enemyBullets = enemyBullets;
     this.playerBullets = playerBullets;
     this.weapon = new Pistol();
     this.setWalls(walls);
-    this.setTint(0x44ff88); // зелёный — отличать от обычных врагов
     this.state = EnemyState.PATROL; // активный охотник: роумит по карте с самого старта
   }
 

@@ -72,11 +72,23 @@ export const BULLET_SPRITE_W = 8; // ширина генерируемой те�
 export const BULLET_SPRITE_H = 4; // высота генерируемой текстуры пули, px
 export const SMART_BOT_DODGE_LATERAL_MULT = 1.8; // боковой зазор угрозы = ENEMY_BODY_RADIUS × это
 
+// --- Символьный рендер сущностей ---
+// Игрок/враги рисуются процедурно (Graphics→generateTexture в PreloadScene): круг тела
+// радиусом *_BODY_RADIUS + опциональный «ствол»-индикатор вдоль +X (rotation=0 ⇒ восток).
+// Ствол-индикатор показывает направление прицела; в Вехе 2 у игрока он станет per-weapon.
+export const INDICATOR_BARREL_LENGTH = 16; // длина ствола за кругом тела, px текстуры
+export const INDICATOR_BARREL_WIDTH = 7; // толщина ствола, px текстуры
+
 // --- Палитра ---
 // Тинты спрайтов (0xRRGGBB)
 export const COLOR_PLAYER_HIT_TINT = 0xff4444; // красная вспышка игрока при уроне
-export const COLOR_SMART_BOT_TINT = 0x44ff88; // зелёный — отличать SmartBot от обычных врагов
 export const COLOR_BULLET = 0xffff88; // цвет генерируемой текстуры пули
+// Цвета тел сущностей в символьном рендере
+export const COLOR_PLAYER_BODY = 0x4488ff; // синий — игрок
+export const COLOR_MELEE_BODY = 0xff4444; // красный — melee-враг (без ствола)
+export const COLOR_SHOOTER_BODY = 0xff8844; // оранжевый — shooter-враг
+export const COLOR_SMART_BODY = 0x44ff88; // зелёный — SmartBot
+export const COLOR_BARREL = 0x222222; // тёмный ствол-индикатор
 // Debug-отрисовка путей (F1)
 export const COLOR_DEBUG_MELEE = 0xff4444;
 export const COLOR_DEBUG_SHOOTER = 0x4444ff;
