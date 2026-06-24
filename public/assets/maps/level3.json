@@ -65,11 +65,11 @@
                 {
                  "height":0,
                  "id":4,
-                 "name":"melee",
+                 "name":"smart",
                  "opacity":1,
                  "point":true,
                  "rotation":0,
-                 "type":"melee",
+                 "type":"smart",
                  "visible":true,
                  "width":0,
                  "x":469.333333333333,

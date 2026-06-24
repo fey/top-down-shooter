@@ -9,6 +9,7 @@ import { type Enemy, EnemyState } from "../entities/Enemy";
 import { MeleeEnemy } from "../entities/MeleeEnemy";
 import { Player } from "../entities/Player";
 import { ShooterEnemy } from "../entities/ShooterEnemy";
+import { SmartBot } from "../entities/SmartBot";
 import type { LevelConfig } from "../level/levels";
 import type { WallDef } from "../types";
 import { GAME_OVER_SCENE_KEY } from "./GameOverScene";
@@ -16,6 +17,7 @@ import { LEVEL_SELECT_SCENE_KEY } from "./LevelSelectScene";
 
 const DEBUG_MELEE_COLOR = 0xff4444;
 const DEBUG_SHOOTER_COLOR = 0x4444ff;
+const DEBUG_SMART_COLOR = 0x44ff88;
 const DEBUG_TARGET_COLOR = 0xffff00;
 
 export const GAME_SCENE_KEY = "Game";
@@ -157,8 +159,12 @@ export class GameScene extends Phaser.Scene {
       const enemy = obj as Enemy;
       if (!enemy.active) continue;
 
-      const isMelee = enemy instanceof MeleeEnemy;
-      const lineColor = isMelee ? DEBUG_MELEE_COLOR : DEBUG_SHOOTER_COLOR;
+      const lineColor =
+        enemy instanceof MeleeEnemy
+          ? DEBUG_MELEE_COLOR
+          : enemy instanceof SmartBot
+            ? DEBUG_SMART_COLOR
+            : DEBUG_SHOOTER_COLOR;
       const waypoints = enemy.getRemainingWaypoints();
 
       if (waypoints.length > 0) {
@@ -252,6 +258,10 @@ export class GameScene extends Phaser.Scene {
         this.enemyGroup.add(e);
       } else if (spawnId === "shooter") {
         const e = new ShooterEnemy(this, ox, oy, this.enemyBullets, walls);
+        e.setPathfinder(this.pathfinder);
+        this.enemyGroup.add(e);
+      } else if (spawnId === "smart") {
+        const e = new SmartBot(this, ox, oy, this.enemyBullets, this.playerBullets, walls);
         e.setPathfinder(this.pathfinder);
         this.enemyGroup.add(e);
       }

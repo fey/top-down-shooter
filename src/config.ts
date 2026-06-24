@@ -30,6 +30,23 @@ export const SHOOTER_BULLET_SPEED = 400;
 export const SHOOTER_KITE_RETREAT_DIST = 262; // SHOOTER_RANGE * 0.75 — перепозиционироваться ближе этого
 export const SHOOTER_KITE_ADVANCE_DIST = 402; // SHOOTER_RANGE * 1.15 — сближаться дальше этого
 
+// SmartBot — соперник уровня игрока с продвинутым ИИ (см. docs/spec.md).
+// HP/скорость как у игрока; оружие переиспользует PISTOL_COOLDOWN/BULLET_SPEED/BULLET_DAMAGE.
+export const SMART_BOT_HP = 5; // как у игрока
+export const SMART_BOT_SPEED = 200; // как у игрока
+export const SMART_BOT_AGGRO_RANGE = 400; // умнее обычных врагов — раньше замечает игрока
+export const SMART_BOT_COMBAT_RANGE = 350; // дистанция перехода в бой (SHOOT)
+export const SMART_BOT_KITE_RETREAT_DIST = 220; // ближе — отступать от игрока
+export const SMART_BOT_KITE_ADVANCE_DIST = 320; // дальше — сближаться через pathfinding
+export const SMART_BOT_REACTION_MS = 180; // задержка реакции перед открытием огня (честность)
+export const SMART_BOT_AIM_SPREAD = 0.08; // рад (~4.5°) — разброс прицела (скилл-модель)
+export const SMART_BOT_DODGE_RADIUS = 130; // дистанция реакции на летящую пулю игрока
+export const SMART_BOT_DODGE_DURATION = 250; // мс рывка вбок при уклонении
+export const SMART_BOT_LOW_HP = 2; // порог HP для ухода в укрытие
+export const SMART_BOT_STRAFE_FLIP_MS = 800; // период смены направления circle-strafe
+export const SMART_BOT_RETREAT_MS = 1800; // макс. длительность отхода в укрытие
+export const SMART_BOT_RETREAT_COOLDOWN_MS = 5000; // пауза перед следующим отходом (нет лечения — иначе вечно прячется)
+
 export const ENEMY_AGGRO_RANGE = 250;
 export const PACK_ALERT_RADIUS = 300;
 export const MELEE_ATTACK_RANGE = 50;
