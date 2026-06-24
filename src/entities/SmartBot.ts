@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { evaluateDodge, kiteAction, predictAimAngle } from "../ai/behaviors/combat";
 import {
   BULLET_SPEED,
   ENEMY_BODY_RADIUS,
@@ -182,16 +183,22 @@ export class SmartBot extends Enemy {
       this.setVelocity(this.dodgeVec.x, this.dodgeVec.y);
     } else if (this.tryStartDodge(now)) {
       this.setVelocity(this.dodgeVec.x, this.dodgeVec.y);
-    } else if (dist < SMART_BOT_KITE_RETREAT_DIST) {
-      this.retreatFrom(player, SMART_BOT_SPEED);
-    } else if (dist > SMART_BOT_KITE_ADVANCE_DIST) {
-      this.moveAlongPath(new Phaser.Math.Vector2(player.x, player.y), SMART_BOT_SPEED);
     } else {
-      this.applyStrafe(player, SMART_BOT_SPEED, SMART_BOT_STRAFE_FLIP_MS, now);
+      switch (kiteAction(dist, SMART_BOT_KITE_RETREAT_DIST, SMART_BOT_KITE_ADVANCE_DIST)) {
+        case "retreat":
+          this.retreatFrom(player, SMART_BOT_SPEED);
+          break;
+        case "advance":
+          this.moveAlongPath(new Phaser.Math.Vector2(player.x, player.y), SMART_BOT_SPEED);
+          break;
+        case "strafe":
+          this.applyStrafe(player, SMART_BOT_SPEED, SMART_BOT_STRAFE_FLIP_MS, now);
+          break;
+      }
     }
 
     // 2. Прицел с упреждением + огонь (поворот без разброса, разброс — только в выстрел).
-    const aimAngle = this.predictAimAngle(player, dist);
+    const aimAngle = this.aimAngleAt(player, dist);
     this.setRotation(aimAngle);
     if (now - this.losAcquiredAt >= SMART_BOT_REACTION_MS) {
       const spread = (Math.random() * 2 - 1) * SMART_BOT_AIM_SPREAD;
@@ -200,12 +207,15 @@ export class SmartBot extends Enemy {
   }
 
   /** Базовый угол прицела с линейным упреждением по скорости игрока (без разброса). */
-  private predictAimAngle(player: Player, dist: number): number {
-    const t = dist / BULLET_SPEED;
+  private aimAngleAt(player: Player, dist: number): number {
     const body = player.body as Phaser.Physics.Arcade.Body | null;
-    const aimX = player.x + (body?.velocity.x ?? 0) * t;
-    const aimY = player.y + (body?.velocity.y ?? 0) * t;
-    return Phaser.Math.Angle.Between(this.x, this.y, aimX, aimY);
+    return predictAimAngle(
+      { x: this.x, y: this.y },
+      { x: player.x, y: player.y },
+      { x: body?.velocity.x ?? 0, y: body?.velocity.y ?? 0 },
+      BULLET_SPEED,
+      dist,
+    );
   }
 
   /**
@@ -218,33 +228,22 @@ export class SmartBot extends Enemy {
       if (!bullet.active) continue;
       const bb = bullet.body as Phaser.Physics.Arcade.Body | null;
       if (!bb) continue;
-      const bvx = bb.velocity.x;
-      const bvy = bb.velocity.y;
-      const speed = Math.hypot(bvx, bvy);
-      if (speed < 1) continue;
 
-      const toBotX = this.x - bullet.x;
-      const toBotY = this.y - bullet.y;
-      if (Math.hypot(toBotX, toBotY) > SMART_BOT_DODGE_RADIUS) continue;
-
-      const nvx = bvx / speed;
-      const nvy = bvy / speed;
-      // Пуля должна приближаться (двигаться в сторону бота).
-      if (toBotX * nvx + toBotY * nvy <= 0) continue;
-      // Боковое отклонение траектории от бота: |cross(toBot, nv)|.
-      const lateral = Math.abs(toBotX * nvy - toBotY * nvx);
-      if (lateral > DODGE_LATERAL_THRESHOLD) continue;
-
-      // Уходим перпендикулярно курсу пули, в ту сторону, где бот уже смещён.
-      let perpX = -nvy;
-      let perpY = nvx;
-      if (toBotX * perpX + toBotY * perpY < 0) {
-        perpX = -perpX;
-        perpY = -perpY;
+      const dodge = evaluateDodge(
+        { x: this.x, y: this.y },
+        { x: bullet.x, y: bullet.y },
+        { x: bb.velocity.x, y: bb.velocity.y },
+        {
+          dodgeRadius: SMART_BOT_DODGE_RADIUS,
+          lateralThreshold: DODGE_LATERAL_THRESHOLD,
+          speed: SMART_BOT_SPEED,
+        },
+      );
+      if (dodge) {
+        this.dodgeVec.set(dodge.x, dodge.y);
+        this.dodgeUntil = now + SMART_BOT_DODGE_DURATION;
+        return true;
       }
-      this.dodgeVec.set(perpX * SMART_BOT_SPEED, perpY * SMART_BOT_SPEED);
-      this.dodgeUntil = now + SMART_BOT_DODGE_DURATION;
-      return true;
     }
     return false;
   }
