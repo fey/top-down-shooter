@@ -1,6 +1,7 @@
 import type Phaser from "phaser";
 import type { WeaponDef } from "../config";
 import { Bullet } from "../entities/Bullet";
+import { jitterAngle } from "./accuracy";
 import { canFire } from "./cooldown";
 import { computePelletAngles } from "./pellets";
 
@@ -35,9 +36,15 @@ export class Weapon {
     y: number,
     angle: number,
   ): void {
-    const { pelletCount, spreadRad, bulletSpeed } = this.def;
-    for (const a of computePelletAngles(angle, pelletCount, spreadRad)) {
+    const { pelletCount, spreadRad, aimSpreadRad, bulletSpeed, damage } = this.def;
+
+    // Неточность разыгрывается один раз на выстрел и уводит ствол ДО раскладки веера:
+    // дробь одного патрона летит связным конусом, а не вразброд.
+    const aim = jitterAngle(angle, aimSpreadRad, Math.random() * 2 - 1);
+
+    for (const a of computePelletAngles(aim, pelletCount, spreadRad)) {
       const bullet = new Bullet(bulletGroup.scene, x, y);
+      bullet.damage = damage;
       bulletGroup.add(bullet);
       bullet.setVelocity(Math.cos(a) * bulletSpeed, Math.sin(a) * bulletSpeed);
     }

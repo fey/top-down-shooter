@@ -55,4 +55,41 @@ describe("реестр оружия", () => {
       expect(w.glyph.length, `оружие ${w.id}`).toBe(1);
     }
   });
+
+  it("урон целый и положительный — иначе враг бессмертен или урон дробится", () => {
+    for (const w of weapons) {
+      expect(Number.isInteger(w.damage), `оружие ${w.id}`).toBe(true);
+      expect(w.damage, `оружие ${w.id}`).toBeGreaterThan(0);
+    }
+  });
+
+  it("веер только у многопульного оружия, и у него угол не нулевой", () => {
+    for (const w of weapons) {
+      if (w.pelletCount > 1) {
+        expect(w.spreadRad, `веер ${w.id}`).toBeGreaterThan(0);
+      } else {
+        // Одиночная пуля игнорирует spreadRad — ненулевое значение вводило бы в заблуждение
+        expect(w.spreadRad, `веер ${w.id}`).toBe(0);
+      }
+    }
+  });
+
+  it("неточность неотрицательна", () => {
+    for (const w of weapons) {
+      expect(w.aimSpreadRad, `оружие ${w.id}`).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it("быстрое оружие бьёт слабее медленного — темп и урон не растут вместе", () => {
+    // Иначе одна пушка доминирует по всем осям и остальные становятся мусором
+    // (патронов и переключения нет, подбор необратим).
+    const single = weapons.filter((w) => w.pelletCount === 1);
+    const byCooldown = [...single].sort((a, b) => a.cooldown - b.cooldown);
+    for (let i = 1; i < byCooldown.length; i++) {
+      const faster = byCooldown[i - 1];
+      const slower = byCooldown[i];
+      if (!faster || !slower) continue;
+      expect(faster.damage, `${faster.id} быстрее ${slower.id}`).toBeLessThanOrEqual(slower.damage);
+    }
+  });
 });

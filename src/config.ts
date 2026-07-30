@@ -19,6 +19,20 @@ export const SHOTGUN_COOLDOWN = 700; // втрое медленнее писто
 export const SHOTGUN_PELLETS = 5;
 export const SHOTGUN_SPREAD_RAD = 0.52; // ~30° от края до края (±15°)
 
+// Винтовка: редкий выстрел, но сносит melee (2 HP) и shooter (3 HP) с одного.
+// «Дальнобойность» — это не дистанция (пистолет и так бьёт дальше экрана 960 px),
+// а скорость пули: 1600 px/s ⇒ полэкрана за 0.3 с, по бегущей цели можно целиться
+// в неё, а не перед ней.
+export const RIFLE_COOLDOWN = 900;
+export const RIFLE_DAMAGE = 3;
+export const RIFLE_BULLET_SPEED = 1600;
+
+// Автомат: 10 выстрелов/с против 4 у пистолета, но платит неточностью.
+// Урон 1 — уже минимум при HP врагов 2/3/5, поэтому ослабить темп можно только разбросом.
+export const AUTOMAT_COOLDOWN = 100;
+export const AUTOMAT_BULLET_SPEED = 700;
+export const AUTOMAT_AIM_SPREAD_RAD = 0.2; // полный конус ~11°: ±10 px на 100 px, ±48 px на 480
+
 export const MELEE_ENEMY_HP = 2;
 export const MELEE_ENEMY_SPEED = 140;
 export const MELEE_ENEMY_DAMAGE = 1;
@@ -101,6 +115,8 @@ export const COLOR_SHOOTER_BODY = 0xff8844; // оранжевый — shooter-в
 export const COLOR_SMART_BODY = 0x44ff88; // зелёный — SmartBot
 export const COLOR_BARREL = 0x222222; // тёмный ствол-индикатор (пистолет, враги)
 export const COLOR_BARREL_SHOTGUN = 0x9a6b2f; // рыжее «дерево» — дробовик виден издалека
+export const COLOR_BARREL_RIFLE = 0x7f8fa6; // холодная сталь — винтовка
+export const COLOR_BARREL_AUTOMAT = 0x6f8f3f; // хаки — автомат
 export const COLOR_PICKUP_FRAME = 0xdddddd; // рамка пикапа — контраст с тёмным полом
 // Debug-отрисовка путей (F1)
 export const COLOR_DEBUG_MELEE = 0xff4444;
@@ -137,8 +153,10 @@ export interface WeaponDef {
   glyph: string; // один символ на пикапе; уникален по реестру (проверяется config.test.ts)
   cooldown: number; // мс между выстрелами
   bulletSpeed: number; // px/s
+  damage: number; // HP за пулю (у веера — за каждую дробинку)
   pelletCount: number;
   spreadRad: number; // полный угол веера (крайняя левая ↔ крайняя правая дробинка)
+  aimSpreadRad: number; // полный конус случайной неточности; 0 — оружие идеально точное
   barrel: BarrelDef;
 }
 
@@ -148,8 +166,10 @@ export const WEAPONS = {
     glyph: "P",
     cooldown: PISTOL_COOLDOWN,
     bulletSpeed: BULLET_SPEED,
+    damage: BULLET_DAMAGE,
     pelletCount: 1,
     spreadRad: 0,
+    aimSpreadRad: 0,
     barrel: {
       length: INDICATOR_BARREL_LENGTH,
       width: INDICATOR_BARREL_WIDTH,
@@ -161,10 +181,36 @@ export const WEAPONS = {
     glyph: "S",
     cooldown: SHOTGUN_COOLDOWN,
     bulletSpeed: BULLET_SPEED,
+    damage: BULLET_DAMAGE,
     pelletCount: SHOTGUN_PELLETS,
     spreadRad: SHOTGUN_SPREAD_RAD,
+    aimSpreadRad: 0,
     // Короче и заметно толще пистолетного — силуэт читается без подписи
     barrel: { length: 12, width: 12, color: COLOR_BARREL_SHOTGUN },
+  },
+  rifle: {
+    id: "rifle",
+    glyph: "R",
+    cooldown: RIFLE_COOLDOWN,
+    bulletSpeed: RIFLE_BULLET_SPEED,
+    damage: RIFLE_DAMAGE,
+    pelletCount: 1,
+    spreadRad: 0,
+    aimSpreadRad: 0, // идеально точная — этим и оправдан редкий выстрел
+    // Самый длинный и тонкий ствол — снайперский силуэт
+    barrel: { length: 26, width: 5, color: COLOR_BARREL_RIFLE },
+  },
+  automat: {
+    id: "automat",
+    glyph: "A",
+    cooldown: AUTOMAT_COOLDOWN,
+    bulletSpeed: AUTOMAT_BULLET_SPEED,
+    damage: BULLET_DAMAGE,
+    pelletCount: 1,
+    spreadRad: 0,
+    aimSpreadRad: AUTOMAT_AIM_SPREAD_RAD,
+    // Средний по всем осям — между пистолетом и винтовкой
+    barrel: { length: 20, width: 8, color: COLOR_BARREL_AUTOMAT },
   },
 } as const satisfies Record<string, WeaponDef>;
 
