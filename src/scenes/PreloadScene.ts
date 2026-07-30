@@ -14,6 +14,7 @@ import {
   INDICATOR_BARREL_LENGTH,
   INDICATOR_BARREL_WIDTH,
   PICKUP_FRAME_WIDTH,
+  PICKUP_GLYPH_FONT_PX,
   PICKUP_SIZE,
   PLAYER_BODY_RADIUS,
   pickupTextureKey,
@@ -24,6 +25,11 @@ import { LEVELS } from "../level/levels";
 import { LEVEL_SELECT_SCENE_KEY } from "./LevelSelectScene";
 
 export const PRELOAD_SCENE_KEY = "Preload";
+
+/** Числовой цвет палитры → CSS-строка для стилей `Text` (палитра хранится в одном виде). */
+function cssColor(color: number): string {
+  return `#${color.toString(16).padStart(6, "0")}`;
+}
 
 /** Ствол врагов-стрелков: их оружие не data-driven, индикатор один на всех. */
 const ENEMY_BARREL: BarrelDef = {
@@ -64,7 +70,7 @@ export class PreloadScene extends Phaser.Scene {
         COLOR_PLAYER_BODY,
         def.barrel,
       );
-      this.makePickupTexture(gfx, pickupTextureKey(def), def.barrel.color);
+      this.makePickupTexture(pickupTextureKey(def), def.barrel.color, def.glyph);
     }
     this.makeEntityTexture(gfx, "enemy_melee", ENEMY_BODY_RADIUS, COLOR_MELEE_BODY, null);
     this.makeEntityTexture(
@@ -111,21 +117,41 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   /**
-   * Текстура пикапа оружия: светлая рамка с заливкой цветом ствола этого оружия. Цвет
-   * берётся из того же `barrel`, что и текстура игрока — подобранное оружие узнаётся
-   * по стволу, менять палитру в двух местах не нужно.
+   * Текстура пикапа оружия: светлая рамка, заливка цветом ствола этого оружия и глиф
+   * оружия по центру. Цвет берётся из того же `barrel`, что и текстура игрока — цветовое
+   * пятно связывает пикап с тем стволом, который появится у игрока, а глиф отвечает на
+   * вопрос «что именно лежит», на который один цвет не отвечает.
+   *
+   * Здесь `DynamicTexture`, а не `Graphics.generateTexture`, как у остальных текстур:
+   * глиф — это `Text`, а Graphics рисовать текст не умеет. `render()` обязателен —
+   * без него буферизованные команды не попадут в текстуру.
    */
-  private makePickupTexture(
-    gfx: Phaser.GameObjects.Graphics,
-    key: string,
-    fillColor: number,
-  ): void {
-    gfx.clear();
+  private makePickupTexture(key: string, fillColor: number, glyph: string): void {
     const s = PICKUP_SIZE;
     const f = PICKUP_FRAME_WIDTH;
+
+    const gfx = this.add.graphics();
     gfx.fillStyle(COLOR_PICKUP_FRAME, 1).fillRect(0, 0, s, s);
     gfx.fillStyle(fillColor, 1).fillRect(f, f, s - f * 2, s - f * 2);
-    gfx.generateTexture(key, s, s);
-    gfx.clear();
+
+    const label = this.add
+      .text(s / 2, s / 2, glyph, {
+        fontSize: `${PICKUP_GLYPH_FONT_PX}px`,
+        fontStyle: "bold",
+        color: cssColor(COLOR_PICKUP_FRAME),
+      })
+      .setOrigin(0.5);
+
+    // draw() без x/y использует собственную позицию объекта: рамка нарисована в
+    // абсолютных координатах от (0,0), глиф стоит в центре с origin 0.5.
+    const texture = this.textures.addDynamicTexture(key, s, s);
+    if (texture) {
+      texture.draw(gfx).draw(label).render();
+    } else {
+      console.error(`[PreloadScene] Texture key "${key}" already taken — pickup glyph not drawn`);
+    }
+
+    gfx.destroy();
+    label.destroy();
   }
 }

@@ -83,9 +83,12 @@ export const SMART_BOT_DODGE_LATERAL_MULT = 1.8; // боковой зазор у
 export const INDICATOR_BARREL_LENGTH = 16; // длина ствола за кругом тела, px текстуры
 export const INDICATOR_BARREL_WIDTH = 7; // толщина ствола, px текстуры
 
-// Пикап оружия: светлая рамка + заливка цветом ствола (сразу видно, что лежит на полу)
-export const PICKUP_SIZE = 26; // сторона квадрата пикапа, px текстуры
+// Пикап оружия: светлая рамка, заливка цветом ствола и глиф оружия внутри.
+// Размер чуть больше игрока (28px на экране) — иначе глиф нечитаем и пикап
+// остаётся «непонятным квадратиком».
+export const PICKUP_SIZE = 32; // сторона квадрата пикапа, px текстуры
 export const PICKUP_FRAME_WIDTH = 3; // толщина рамки, px
+export const PICKUP_GLYPH_FONT_PX = 24; // кегль глифа; влезает в 26px просвета внутри рамки
 
 // --- Палитра ---
 // Тинты спрайтов (0xRRGGBB)
@@ -131,6 +134,7 @@ export interface BarrelDef {
 /** Дескриптор оружия. `pelletCount`/`spreadRad` описывают веер (1 и 0 — одиночный выстрел). */
 export interface WeaponDef {
   id: string;
+  glyph: string; // один символ на пикапе; уникален по реестру (проверяется config.test.ts)
   cooldown: number; // мс между выстрелами
   bulletSpeed: number; // px/s
   pelletCount: number;
@@ -141,6 +145,7 @@ export interface WeaponDef {
 export const WEAPONS = {
   pistol: {
     id: "pistol",
+    glyph: "P",
     cooldown: PISTOL_COOLDOWN,
     bulletSpeed: BULLET_SPEED,
     pelletCount: 1,
@@ -153,6 +158,7 @@ export const WEAPONS = {
   },
   shotgun: {
     id: "shotgun",
+    glyph: "S",
     cooldown: SHOTGUN_COOLDOWN,
     bulletSpeed: BULLET_SPEED,
     pelletCount: SHOTGUN_PELLETS,
