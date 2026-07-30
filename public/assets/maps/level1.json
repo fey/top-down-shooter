@@ -95,6 +95,25 @@
                  "width":0,
                  "x":1440,
                  "y":648
+                },
+                {
+                 "height":0,
+                 "id":5,
+                 "name":"weapon_pickup",
+                 "opacity":1,
+                 "point":true,
+                 "properties":[
+                        {
+                         "name":"weapon",
+                         "type":"string",
+                         "value":"shotgun"
+                        }],
+                 "rotation":0,
+                 "type":"weapon_pickup",
+                 "visible":true,
+                 "width":0,
+                 "x":928,
+                 "y":544
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -103,7 +122,7 @@
          "y":0
         }],
  "nextlayerid":5,
- "nextobjectid":5,
+ "nextobjectid":6,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.12.2",

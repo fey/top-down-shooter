@@ -7,9 +7,11 @@ import {
   PLAYER_INVINCIBLE_MS,
   PLAYER_SPEED,
   PLAYER_SPRITE_SCALE,
+  playerTextureKey,
+  WEAPONS,
+  type WeaponDef,
 } from "../config";
-import { Pistol } from "../weapons/Pistol";
-import type { Weapon } from "../weapons/Weapon";
+import { Weapon } from "../weapons/Weapon";
 
 type CursorKeys = {
   up: Phaser.Input.Keyboard.Key;
@@ -21,17 +23,17 @@ type CursorKeys = {
 export class Player extends Phaser.Physics.Arcade.Sprite {
   private keys: CursorKeys;
   private weapon: Weapon;
+  weaponDef: WeaponDef;
   private bulletGroup: Phaser.Physics.Arcade.Group;
   private invincibleUntil = 0;
   hp: number;
 
   constructor(scene: Phaser.Scene, x: number, y: number, bulletGroup: Phaser.Physics.Arcade.Group) {
-    super(scene, x, y, "player");
+    super(scene, x, y, playerTextureKey(WEAPONS.pistol));
     scene.add.existing(this);
     scene.physics.add.existing(this);
     this.setScale(PLAYER_SPRITE_SCALE);
-    const r = PLAYER_BODY_RADIUS;
-    this.setCircle(r, this.width / 2 - r, this.height / 2 - r);
+    this.syncBody();
     this.setCollideWorldBounds(true);
     this.hp = PLAYER_HP;
 
@@ -45,7 +47,29 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }) as CursorKeys;
 
     this.bulletGroup = bulletGroup;
-    this.weapon = new Pistol();
+    this.weaponDef = WEAPONS.pistol;
+    this.weapon = new Weapon(this.weaponDef);
+  }
+
+  /**
+   * Меняет оружие: дескриптор, экземпляр `Weapon` и текстуру со стволом. Текстуры разной
+   * длины (ствол выступает за круг), поэтому после смены обязателен пересчёт тела.
+   */
+  equip(def: WeaponDef): void {
+    if (def.id === this.weaponDef.id) return;
+    this.weaponDef = def;
+    this.weapon = new Weapon(def);
+    this.setTexture(playerTextureKey(def));
+    this.syncBody();
+  }
+
+  /**
+   * Приводит круговое тело в соответствие с текущей текстурой: круг радиуса
+   * PLAYER_BODY_RADIUS в центре текстуры (смещения задаются в пикселях текстуры, до scale).
+   */
+  private syncBody(): void {
+    const r = PLAYER_BODY_RADIUS;
+    this.setCircle(r, this.width / 2 - r, this.height / 2 - r);
   }
 
   takeDamage(amount: number): void {

@@ -57,7 +57,7 @@ bd close <id>         # Complete work
 
 Небольшой браузерный top-down шутер: одна статичная карта, два типа врагов, в процессе разработки.
 - **Текущее состояние** (архитектура, баланс, что реализовано): `docs/spec.md` — читать в первую очередь.
-- **Оставшаяся работа** (milestone M6–M9): `docs/roadmap.md`.
+- **Оставшаяся работа** (milestone M8–M9): `docs/roadmap.md`.
 
 ## Стек
 
@@ -82,7 +82,8 @@ make clean      # rm -rf dist
 
 **Unit-тесты (vitest)** покрывают только чистое (Phaser-free) ядро: навигацию (`src/ai/grid.ts`),
 боевые решения (`src/ai/behaviors/`), геометрию LoS (`src/ai/geometry.ts`), отталкивание от стен
-(`src/ai/separation.ts`), кулдаун оружия, парсинг уровня (`src/level/spawns.ts`) и инварианты
+(`src/ai/separation.ts`), кулдаун оружия и веер дробинок (`src/weapons/`), парсинг уровня
+(`src/level/spawns.ts`) и инварианты
 баланса (`src/config.test.ts`). Тесты колокейтятся рядом с модулем (`foo.ts` → `foo.test.ts`),
 гоняются в окружении `node` и **не импортируют Phaser**. Перед коммитом изменений кода —
 `make test` входит в quality gates наравне с `make typecheck` и `make check`.

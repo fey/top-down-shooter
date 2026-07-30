@@ -1,12 +1,13 @@
 import Phaser from "phaser";
 import type { Pathfinder } from "../ai/Pathfinder";
-import { COLOR_BG_GAME, PACK_ALERT_RADIUS } from "../config";
+import { COLOR_BG_GAME, PACK_ALERT_RADIUS, WEAPONS } from "../config";
 import { DebugOverlay } from "../debug/DebugOverlay";
 import { drawPathGrid } from "../debug/grid";
 import { drawDebugPaths } from "../debug/paths";
 import { Bullet } from "../entities/Bullet";
 import { type Enemy, EnemyState } from "../entities/Enemy";
 import type { Player } from "../entities/Player";
+import type { WeaponPickup } from "../entities/WeaponPickup";
 import { loadTiledLevel } from "../level/LevelLoader";
 import type { LevelConfig } from "../level/levels";
 import { GAME_OVER_SCENE_KEY } from "./GameOverScene";
@@ -20,6 +21,7 @@ export class GameScene extends Phaser.Scene {
   private playerBullets!: Phaser.Physics.Arcade.Group;
   private enemyBullets!: Phaser.Physics.Arcade.Group;
   private enemyGroup!: Phaser.Physics.Arcade.Group;
+  private pickups!: Phaser.Physics.Arcade.StaticGroup;
   private pathfinder!: Pathfinder;
   private pathGraphics!: Phaser.GameObjects.Graphics;
   private gridGraphics!: Phaser.GameObjects.Graphics;
@@ -44,13 +46,15 @@ export class GameScene extends Phaser.Scene {
     this.playerBullets = this.physics.add.group({ classType: Bullet, runChildUpdate: true });
     this.enemyBullets = this.physics.add.group({ classType: Bullet, runChildUpdate: true });
     this.enemyGroup = this.physics.add.group();
+    this.pickups = this.physics.add.staticGroup();
     this.pathGraphics = this.add.graphics().setDepth(50);
 
-    // Загрузка уровня: создаёт игрока, врагов и pathfinder; коллизии/камеру вешаем здесь
+    // Загрузка уровня: создаёт игрока, врагов, пикапы и pathfinder; коллизии/камеру вешаем здесь
     const level = loadTiledLevel(this, this.levelConfig.key, {
       playerBullets: this.playerBullets,
       enemyBullets: this.enemyBullets,
       enemyGroup: this.enemyGroup,
+      pickups: this.pickups,
     });
     this.player = level.player;
     this.pathfinder = level.pathfinder;
@@ -106,6 +110,13 @@ export class GameScene extends Phaser.Scene {
       const dmg = bullet.damage;
       bullet.destroy();
       this.player.takeDamage(dmg);
+    });
+
+    // Player → weapon pickups: overlap (не collider) — игрок проходит сквозь, оружие меняется
+    this.physics.add.overlap(this.player, this.pickups, (_playerObj, pickupObj) => {
+      const pickup = pickupObj as WeaponPickup;
+      this.player.equip(WEAPONS[pickup.weaponId]);
+      pickup.destroy();
     });
 
     // Player bullets → enemies

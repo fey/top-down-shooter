@@ -25,10 +25,10 @@ import {
   SMART_BOT_SPEED,
   SMART_BOT_STRAFE_FLIP_MS,
   WAYPOINT_REACH_DIST,
+  WEAPONS,
 } from "../config";
 import type { WallDef } from "../types";
-import { Pistol } from "../weapons/Pistol";
-import type { Weapon } from "../weapons/Weapon";
+import { Weapon } from "../weapons/Weapon";
 import type { Bullet } from "./Bullet";
 import { Enemy, EnemyState } from "./Enemy";
 import type { Player } from "./Player";
@@ -40,7 +40,8 @@ const DODGE_LATERAL_THRESHOLD = ENEMY_BODY_RADIUS * SMART_BOT_DODGE_LATERAL_MULT
  * Умный бот — соперник уровня игрока (то же HP/скорость/оружие), но с продвинутым ИИ
  * в духе ботов Quake 3: упреждающий прицел с моделью точности/реакции, уклонение от пуль,
  * тактика укрытий при низком HP и боевое маневрирование (circle-strafe).
- * Стреляет тем же `Pistol`, что и игрок, в группу `enemyBullets`; отслеживает `playerBullets`
+ * Стреляет пистолетом (`WEAPONS.pistol`, как стартовое оружие игрока) в группу `enemyBullets`;
+ * оружие не меняет — пикапы предназначены игроку. Отслеживает `playerBullets`
  * для уклонения. Переиспользует навигацию и LoS базового класса `Enemy`.
  */
 export class SmartBot extends Enemy {
@@ -78,7 +79,7 @@ export class SmartBot extends Enemy {
     super(scene, x, y, "enemy_smart", SMART_BOT_HP);
     this.enemyBullets = enemyBullets;
     this.playerBullets = playerBullets;
-    this.weapon = new Pistol();
+    this.weapon = new Weapon(WEAPONS.pistol);
     this.setWalls(walls);
     this.state = EnemyState.PATROL; // активный охотник: роумит по карте с самого старта
   }

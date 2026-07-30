@@ -2,9 +2,10 @@ import type Phaser from "phaser";
 import { Pathfinder } from "../ai/Pathfinder";
 import { MAP_HEIGHT, MAP_WIDTH } from "../config";
 import { Player } from "../entities/Player";
+import { WeaponPickup } from "../entities/WeaponPickup";
 import type { WallDef } from "../types";
 import { createEnemy } from "./EnemyFactory";
-import { classifySpawn, tileToWall } from "./spawns";
+import { classifySpawn, readPickupWeaponId, tileToWall } from "./spawns";
 
 /** Результат загрузки уровня. wallLayer === null при аварийном fallback. */
 export interface LoadedLevel {
@@ -15,11 +16,12 @@ export interface LoadedLevel {
   mapH: number;
 }
 
-/** Группы, в которые загрузчик размещает игрока, врагов и их пули. */
+/** Группы, в которые загрузчик размещает игрока, врагов, их пули и пикапы. */
 export interface LevelDeps {
   playerBullets: Phaser.Physics.Arcade.Group;
   enemyBullets: Phaser.Physics.Arcade.Group;
   enemyGroup: Phaser.Physics.Arcade.Group;
+  pickups: Phaser.Physics.Arcade.StaticGroup;
 }
 
 /** Извлекает WallDef[] из слоя стен Tiled для проверок LoS и поиска пути. */
@@ -34,8 +36,9 @@ function extractWallsFromLayer(wallLayer: Phaser.Tilemaps.TilemapLayer): WallDef
 
 /**
  * Загружает уровень из Tiled JSON-карты: слои "floor" (визуал), "walls" (коллизии),
- * "spawns" (объекты "player_start", "melee", "shooter", "smart"). Создаёт игрока,
- * врагов (в deps.enemyGroup) и Pathfinder. Навешивание коллайдеров и камеры —
+ * "spawns" (объекты "player_start", "melee", "shooter", "smart", "weapon_pickup").
+ * Создаёт игрока, врагов (в deps.enemyGroup), пикапы (в deps.pickups) и Pathfinder.
+ * Навешивание коллайдеров и камеры —
  * ответственность вызывающей сцены (ей возвращается wallLayer и игрок).
  */
 export function loadTiledLevel(
@@ -87,8 +90,20 @@ export function loadTiledLevel(
     // Support both: fall back to name when type is empty.
     const spawnId = obj.type || obj.name;
 
-    if (classifySpawn(spawnId) === "player") {
+    const kind = classifySpawn(spawnId);
+    if (kind === "player") {
       player = new Player(scene, ox, oy, deps.playerBullets);
+      continue;
+    }
+    if (kind === "pickup") {
+      const weaponId = readPickupWeaponId(obj.properties);
+      if (weaponId) {
+        deps.pickups.add(new WeaponPickup(scene, ox, oy, weaponId));
+      } else {
+        console.warn(
+          `[LevelLoader] Pickup at (${ox}, ${oy}) has no valid "weapon" property — skipped`,
+        );
+      }
       continue;
     }
     const enemy = createEnemy(scene, spawnId, ox, oy, enemyDeps);

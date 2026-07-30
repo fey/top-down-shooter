@@ -15,6 +15,10 @@ export const BULLET_TTL = 2000;
 export const BULLET_DAMAGE = 1;
 export const PISTOL_COOLDOWN = 250;
 
+export const SHOTGUN_COOLDOWN = 700; // втрое медленнее пистолета — плата за веер
+export const SHOTGUN_PELLETS = 5;
+export const SHOTGUN_SPREAD_RAD = 0.52; // ~30° от края до края (±15°)
+
 export const MELEE_ENEMY_HP = 2;
 export const MELEE_ENEMY_SPEED = 140;
 export const MELEE_ENEMY_DAMAGE = 1;
@@ -79,6 +83,10 @@ export const SMART_BOT_DODGE_LATERAL_MULT = 1.8; // боковой зазор у
 export const INDICATOR_BARREL_LENGTH = 16; // длина ствола за кругом тела, px текстуры
 export const INDICATOR_BARREL_WIDTH = 7; // толщина ствола, px текстуры
 
+// Пикап оружия: светлая рамка + заливка цветом ствола (сразу видно, что лежит на полу)
+export const PICKUP_SIZE = 26; // сторона квадрата пикапа, px текстуры
+export const PICKUP_FRAME_WIDTH = 3; // толщина рамки, px
+
 // --- Палитра ---
 // Тинты спрайтов (0xRRGGBB)
 export const COLOR_PLAYER_HIT_TINT = 0xff4444; // красная вспышка игрока при уроне
@@ -88,7 +96,9 @@ export const COLOR_PLAYER_BODY = 0x4488ff; // синий — игрок
 export const COLOR_MELEE_BODY = 0xff4444; // красный — melee-враг (без ствола)
 export const COLOR_SHOOTER_BODY = 0xff8844; // оранжевый — shooter-враг
 export const COLOR_SMART_BODY = 0x44ff88; // зелёный — SmartBot
-export const COLOR_BARREL = 0x222222; // тёмный ствол-индикатор
+export const COLOR_BARREL = 0x222222; // тёмный ствол-индикатор (пистолет, враги)
+export const COLOR_BARREL_SHOTGUN = 0x9a6b2f; // рыжее «дерево» — дробовик виден издалека
+export const COLOR_PICKUP_FRAME = 0xdddddd; // рамка пикапа — контраст с тёмным полом
 // Debug-отрисовка путей (F1)
 export const COLOR_DEBUG_MELEE = 0xff4444;
 export const COLOR_DEBUG_SHOOTER = 0x4444ff;
@@ -105,3 +115,70 @@ export const COLOR_MENU_BTN_HOVER = "#ffffff";
 export const COLOR_MENU_BTN_BG = "#223322";
 export const COLOR_WIN = "#88ff88";
 export const COLOR_LOSE = "#ff4444";
+
+// --- Реестр оружия ---
+// Оружие — данные, а не подклассы: один `Weapon` читает дескриптор. Добавить пушку =
+// добавить запись здесь (текстура игрока и цвет пикапа генерируются из barrel).
+// Идёт последним в файле: дескрипторы ссылаются на константы и цвета выше.
+
+/** Ствол-индикатор в символьном рендере: геометрия и цвет, по которым генерируется текстура. */
+export interface BarrelDef {
+  length: number; // px текстуры, выступает за круг тела
+  width: number; // толщина, px текстуры
+  color: number; // 0xRRGGBB
+}
+
+/** Дескриптор оружия. `pelletCount`/`spreadRad` описывают веер (1 и 0 — одиночный выстрел). */
+export interface WeaponDef {
+  id: string;
+  cooldown: number; // мс между выстрелами
+  bulletSpeed: number; // px/s
+  pelletCount: number;
+  spreadRad: number; // полный угол веера (крайняя левая ↔ крайняя правая дробинка)
+  barrel: BarrelDef;
+}
+
+export const WEAPONS = {
+  pistol: {
+    id: "pistol",
+    cooldown: PISTOL_COOLDOWN,
+    bulletSpeed: BULLET_SPEED,
+    pelletCount: 1,
+    spreadRad: 0,
+    barrel: {
+      length: INDICATOR_BARREL_LENGTH,
+      width: INDICATOR_BARREL_WIDTH,
+      color: COLOR_BARREL,
+    },
+  },
+  shotgun: {
+    id: "shotgun",
+    cooldown: SHOTGUN_COOLDOWN,
+    bulletSpeed: BULLET_SPEED,
+    pelletCount: SHOTGUN_PELLETS,
+    spreadRad: SHOTGUN_SPREAD_RAD,
+    // Короче и заметно толще пистолетного — силуэт читается без подписи
+    barrel: { length: 12, width: 12, color: COLOR_BARREL_SHOTGUN },
+  },
+} as const satisfies Record<string, WeaponDef>;
+
+/** Идентификаторы оружия, известные реестру (для чтения из Tiled-свойств пикапов). */
+export type WeaponId = keyof typeof WEAPONS;
+
+/** Проверяет, что строка из данных уровня — валидный id оружия. */
+export function isWeaponId(id: string): id is WeaponId {
+  return id in WEAPONS;
+}
+
+/**
+ * Ключ текстуры игрока для данного оружия. Текстуры генерируются в PreloadScene по одной
+ * на запись реестра — ключ строится здесь, чтобы генератор и `Player.equip` не разъехались.
+ */
+export function playerTextureKey(def: WeaponDef): string {
+  return `player_${def.id}`;
+}
+
+/** Ключ текстуры пикапа для данного оружия (генерируется там же, где текстуры игрока). */
+export function pickupTextureKey(def: WeaponDef): string {
+  return `pickup_${def.id}`;
+}

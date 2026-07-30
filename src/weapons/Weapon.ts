@@ -1,14 +1,20 @@
 import type Phaser from "phaser";
+import type { WeaponDef } from "../config";
+import { Bullet } from "../entities/Bullet";
 import { canFire } from "./cooldown";
+import { computePelletAngles } from "./pellets";
 
-export abstract class Weapon {
-  protected readonly cooldown: number;
-  protected readonly bulletSpeed: number;
+/**
+ * Оружие, управляемое дескриптором (`WEAPONS` в config.ts): кулдаун, скорость пули и
+ * веер дробинок — данные, а не подклассы. Стрелок (игрок, SmartBot) владеет экземпляром
+ * и передаёт группу пуль в `tryFire` — само оружие про сцену ничего не знает.
+ */
+export class Weapon {
+  readonly def: WeaponDef;
   private lastFired = 0;
 
-  constructor(cooldown: number, bulletSpeed: number) {
-    this.cooldown = cooldown;
-    this.bulletSpeed = bulletSpeed;
+  constructor(def: WeaponDef) {
+    this.def = def;
   }
 
   tryFire(
@@ -18,15 +24,22 @@ export abstract class Weapon {
     angle: number,
     now: number,
   ): void {
-    if (!canFire(now, this.lastFired, this.cooldown)) return;
+    if (!canFire(now, this.lastFired, this.def.cooldown)) return;
     this.lastFired = now;
     this.spawnBullets(bulletGroup, x, y, angle);
   }
 
-  protected abstract spawnBullets(
+  private spawnBullets(
     bulletGroup: Phaser.Physics.Arcade.Group,
     x: number,
     y: number,
     angle: number,
-  ): void;
+  ): void {
+    const { pelletCount, spreadRad, bulletSpeed } = this.def;
+    for (const a of computePelletAngles(angle, pelletCount, spreadRad)) {
+      const bullet = new Bullet(bulletGroup.scene, x, y);
+      bulletGroup.add(bullet);
+      bullet.setVelocity(Math.cos(a) * bulletSpeed, Math.sin(a) * bulletSpeed);
+    }
+  }
 }
