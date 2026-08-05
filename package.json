@@ -17,10 +17,10 @@
     "phaser": "^4.1.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.15",
-    "npm-check-updates": "^22",
-    "typescript": "^6.0.3",
-    "vite": "^8.0.13",
-    "vitest": "^4.1.9"
+    "@biomejs/biome": "^2.5.6",
+    "npm-check-updates": "^23",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.0",
+    "vitest": "^4.1.10"
   }
 }
