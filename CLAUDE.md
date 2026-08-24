@@ -22,6 +22,10 @@ bd close <id>         # Complete work
 - Use `bd` for ALL task tracking — do NOT use TodoWrite, TaskCreate, or markdown TODO lists
 - Run `bd prime` for detailed command reference and session close protocol
 - Use `bd remember` for persistent knowledge — do NOT use MEMORY.md files
+- **Состояние трекера в контексте — снимок.** Вывод `bd ready` и `bd show` устаревает за минуты:
+  параллельные сеансы берут задачи и закрывают их. Перед тем как назвать свободную работу, взять
+  задачу или сослаться на её статус — перечитай `bd ready` (или `bd show <id>`) заново, даже если
+  вывод уже есть выше в диалоге.
 
 **Architecture in one line:** issues live in a local Dolt DB; sync uses `refs/dolt/data` on your git remote; `.beads/issues.jsonl` is a passive export. See https://github.com/gastownhall/beads/blob/main/docs/SYNC_CONCEPTS.md for details and anti-patterns.
 
