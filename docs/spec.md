@@ -183,6 +183,7 @@ Sprite + Arcade Physics body. Управление: WASD (нормализова
 **Базовый класс `Enemy`:**
 - State machine: `IDLE → CHASE → ATTACK / SHOOT / SEARCH`.
 - **Pack alerts**: при агро враг оповещает соседних (`PACK_ALERT_RADIUS`) бездействующих врагов.
+- **Агро от стрельбы** (`Enemy.aggro`): попадание пули игрока или её пролёт ближе `ENEMY_WHIZZ_RADIUS` переводит врага в CHASE, даже если он игрока не видит. Целью становится **точка выстрела** (`Bullet.firedFromX/Y` — позиция стрелка в момент спавна пули), а не текущая позиция игрока: стрельба из-за угла выдаёт направление, а не самого стрелка. Тревога действует только на врагов вне боя (IDLE, PATROL, SEARCH) и, в отличие от визуального обнаружения, **не рассылает pack alert** — промах поднимает одного врага, а не всю комнату. Геометрия «пуля прошла рядом» — чистая `whizzSource()` в `ai/behaviors/alert.ts`; снимок пуль собирает `GameScene.update`.
 - **Pathfinding**: `Pathfinder` (Theta* на сетке 64×64 px) строит натянутый any-angle маршрут; если прямая до цели свободна — идёт напрямую без поиска. Путь пересчитывается при отклонении цели > `PATH_RECALC_DIST`.
 - Скучивание врагов предотвращают коллизии Arcade Physics (enemy↔enemy collider), отдельной системы позиционирования нет.
 
@@ -316,6 +317,7 @@ Sprite + Arcade Physics body. Управление: WASD (нормализова
 | `SMART_BOT_SEARCH_RADIUS` | 250 px | радиус разброса точек обыска |
 | `ENEMY_AGGRO_RANGE` | 250 px | |
 | `PACK_ALERT_RADIUS` | 300 px | радиус оповещения союзников |
+| `ENEMY_WHIZZ_RADIUS` | 120 px | пуля ближе — враг слышит выстрел и идёт к точке выстрела |
 | `MELEE_ATTACK_RANGE` | 50 px | |
 | `PATH_CELL_SIZE` | 64 px | размер ячейки pathfinding-сетки |
 | `PATH_RECALC_DIST` | 64 px | отклонение цели от пути → пересчёт |

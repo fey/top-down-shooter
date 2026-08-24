@@ -1,6 +1,13 @@
 import Phaser from "phaser";
+import { type BulletTrace, whizzSource } from "../ai/behaviors/alert";
 import type { Pathfinder } from "../ai/Pathfinder";
-import { COLOR_BG_GAME, PACK_ALERT_RADIUS, PLAYER_HP, WEAPONS } from "../config";
+import {
+  COLOR_BG_GAME,
+  ENEMY_WHIZZ_RADIUS,
+  PACK_ALERT_RADIUS,
+  PLAYER_HP,
+  WEAPONS,
+} from "../config";
 import { DebugOverlay } from "../debug/DebugOverlay";
 import { drawPathGrid } from "../debug/grid";
 import { drawDebugPaths } from "../debug/paths";
@@ -13,6 +20,17 @@ import type { LevelConfig } from "../level/levels";
 import { GAME_OVER_SCENE_KEY } from "./GameOverScene";
 import { HUD_SCENE_KEY, type HudInitData } from "./HUDScene";
 import { LEVEL_SELECT_SCENE_KEY } from "./LevelSelectScene";
+
+/**
+ * Состояния, в которых враг ещё не ведёт бой и потому реагирует на чужую стрельбу.
+ * Тот же набор проверяет Enemy.aggro; здесь он нужен, чтобы не гонять геометрию
+ * по врагам, которые всё равно ничего не услышат.
+ */
+const UNAWARE_STATES: ReadonlySet<EnemyState> = new Set([
+  EnemyState.IDLE,
+  EnemyState.PATROL,
+  EnemyState.SEARCH,
+]);
 
 export const GAME_SCENE_KEY = "Game";
 export type { LevelConfig };
@@ -163,6 +181,8 @@ export class GameScene extends Phaser.Scene {
       (bulletObj, enemyObj) => {
         const bullet = bulletObj as Bullet;
         const enemy = enemyObj as Enemy;
+        // Агро до урона: takeDamage может уничтожить врага, и вызов ушёл бы в пустоту.
+        enemy.aggro(bullet.firedFromX, bullet.firedFromY);
         bullet.destroy();
         enemy.takeDamage(bullet.damage);
       },
@@ -181,10 +201,48 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  /**
+   * Пуля игрока, прошедшая рядом, поднимает врага так же, как попадание: он идёт к точке
+   * выстрела. Проверка живёт в сцене, а не в tick() врага, потому что врагу неоткуда
+   * знать про группу пуль — снимок собирается здесь, решение принимает чистая whizzSource.
+   *
+   * Перебор пуль × врагов допустим: и тех и других на уровне десятки, а фильтр по
+   * состоянию отсекает всех, кто уже в бою.
+   */
+  private alertEnemiesNearBullets(): void {
+    const unaware: Enemy[] = [];
+    for (const obj of this.enemyGroup.getChildren()) {
+      const enemy = obj as Enemy;
+      if (enemy.active && UNAWARE_STATES.has(enemy.state)) unaware.push(enemy);
+    }
+    if (unaware.length === 0) return;
+
+    const traces: BulletTrace[] = [];
+    for (const obj of this.playerBullets.getChildren()) {
+      const bullet = obj as Bullet;
+      if (bullet.active) {
+        traces.push({
+          x: bullet.x,
+          y: bullet.y,
+          firedFromX: bullet.firedFromX,
+          firedFromY: bullet.firedFromY,
+        });
+      }
+    }
+    if (traces.length === 0) return;
+
+    for (const enemy of unaware) {
+      const source = whizzSource(traces, enemy.x, enemy.y, ENEMY_WHIZZ_RADIUS);
+      if (source) enemy.aggro(source.x, source.y);
+    }
+  }
+
   override update(): void {
     if (this.gameOver) return;
 
     if (this.player.active) this.player.update();
+
+    this.alertEnemiesNearBullets();
 
     for (const enemy of this.enemyGroup.getChildren()) {
       if (enemy.active) (enemy as Enemy).tick(this.player);

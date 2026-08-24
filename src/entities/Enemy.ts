@@ -106,6 +106,26 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.stuckCheckPos.set(this.x, this.y);
   }
 
+  /**
+   * Агро извне: враг узнал о противнике, не увидев его — по попаданию или по
+   * пуле, прошедшей рядом. Целью становится точка выстрела: враг идёт разбираться туда,
+   * откуда стреляли, а не к игроку напрямую — иначе стрельба из-за угла давала бы врагу
+   * знание, которого у него нет.
+   *
+   * Срабатывает только в состояниях, где враг ещё не в бою: уже преследующему или
+   * стреляющему агро не нужно, а сброс цели сбил бы ему текущий манёвр.
+   */
+  aggro(sourceX: number, sourceY: number): void {
+    const unaware =
+      this.state === EnemyState.IDLE ||
+      this.state === EnemyState.PATROL ||
+      this.state === EnemyState.SEARCH;
+    if (!unaware) return;
+    this.rememberLastKnown(sourceX, sourceY);
+    this.invalidatePath();
+    this.state = EnemyState.CHASE;
+  }
+
   takeDamage(amount: number): void {
     this.hp -= amount;
     if (this.hp <= 0) {

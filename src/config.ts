@@ -71,6 +71,11 @@ export const SMART_BOT_SEARCH_RADIUS = 250; // радиус разброса т�
 
 export const ENEMY_AGGRO_RANGE = 250;
 export const PACK_ALERT_RADIUS = 300;
+// Насколько близко должна пройти пуля игрока, чтобы враг «услышал» выстрел и пошёл
+// разбираться. Заметно меньше ENEMY_AGGRO_RANGE: стрельба выдаёт игрока, но промах
+// через полкарты не должен поднимать уровень целиком — иначе пропадает смысл заходить
+// с фланга. Больше — враги сбегаются на любой выстрел, меньше — свист не читается.
+export const ENEMY_WHIZZ_RADIUS = 120;
 export const MELEE_ATTACK_RANGE = 50;
 
 export const PATH_CELL_SIZE = 64;
