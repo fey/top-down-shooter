@@ -12,6 +12,7 @@ import {
   type WeaponDef,
 } from "../config";
 import { Weapon } from "../weapons/Weapon";
+import { spawnBullets } from "./Bullet";
 
 type CursorKeys = {
   up: Phaser.Input.Keyboard.Key;
@@ -110,7 +111,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.setRotation(angle);
 
     if (pointer.isDown) {
-      this.weapon.tryFire(this.bulletGroup, this.x, this.y, angle, this.scene.time.now);
+      const shot = this.weapon.tryFire(this.x, this.y, angle, this.scene.time.now);
+      spawnBullets(this.bulletGroup, shot);
     }
   }
 }

@@ -32,5 +32,30 @@
       "trailingCommas": "all"
     }
   },
-  "assist": { "actions": { "source": { "organizeImports": "on" } } }
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  },
+  "overrides": [
+    {
+      "includes": ["src/weapons/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "phaser": "src/weapons/ — чистое ядро оружия: выстрел возвращает спецификации пуль, объекты сцены создаёт spawnBullets в entities/Bullet.ts. Импорт Phaser здесь ломает покрытие тестами."
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
 }

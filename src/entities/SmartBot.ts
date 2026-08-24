@@ -29,7 +29,7 @@ import {
 } from "../config";
 import type { WallDef } from "../types";
 import { Weapon } from "../weapons/Weapon";
-import type { Bullet } from "./Bullet";
+import { type Bullet, spawnBullets } from "./Bullet";
 import { Enemy, EnemyState } from "./Enemy";
 import type { Player } from "./Player";
 
@@ -203,7 +203,8 @@ export class SmartBot extends Enemy {
     this.setRotation(aimAngle);
     if (now - this.losAcquiredAt >= SMART_BOT_REACTION_MS) {
       const spread = (Math.random() * 2 - 1) * SMART_BOT_AIM_SPREAD;
-      this.weapon.tryFire(this.enemyBullets, this.x, this.y, aimAngle + spread, now);
+      const shot = this.weapon.tryFire(this.x, this.y, aimAngle + spread, now);
+      spawnBullets(this.enemyBullets, shot);
     }
   }
 

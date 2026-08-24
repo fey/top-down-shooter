@@ -113,9 +113,8 @@ export class ShooterEnemy extends Enemy {
   }
 
   private spawnBullet(angle: number): void {
-    const bullet = new Bullet(this.scene, this.x, this.y);
+    const bullet = new Bullet(this.scene, this.x, this.y, SHOOTER_ENEMY_DAMAGE);
     this.enemyBullets.add(bullet);
-    bullet.damage = SHOOTER_ENEMY_DAMAGE;
     bullet.setVelocity(
       Math.cos(angle) * SHOOTER_BULLET_SPEED,
       Math.sin(angle) * SHOOTER_BULLET_SPEED,
