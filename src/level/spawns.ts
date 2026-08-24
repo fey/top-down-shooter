@@ -9,22 +9,24 @@ import type { WallDef } from "../types";
 /** Тип точки спавна из слоя "spawns". null — неизвестный идентификатор. */
 export type SpawnKind = "player" | "melee" | "shooter" | "smart" | "pickup";
 
+/**
+ * Таблица идентификаторов слоя "spawns". Таблица, а не switch, чтобы список допустимых
+ * значений можно было показать автору карты в предупреждении и он не разъехался с разбором.
+ */
+const SPAWN_KIND_BY_ID: Record<string, SpawnKind | undefined> = {
+  player_start: "player",
+  melee: "melee",
+  shooter: "shooter",
+  smart: "smart",
+  weapon_pickup: "pickup",
+};
+
+/** Идентификаторы, которые понимает загрузчик уровня — для диагностики битой карты. */
+export const KNOWN_SPAWN_IDS = Object.keys(SPAWN_KIND_BY_ID);
+
 /** Сопоставляет идентификатор спавна (Tiled type/name) с типом сущности. */
 export function classifySpawn(spawnId: string): SpawnKind | null {
-  switch (spawnId) {
-    case "player_start":
-      return "player";
-    case "melee":
-      return "melee";
-    case "shooter":
-      return "shooter";
-    case "smart":
-      return "smart";
-    case "weapon_pickup":
-      return "pickup";
-    default:
-      return null;
-  }
+  return SPAWN_KIND_BY_ID[spawnId] ?? null;
 }
 
 /** Минимум полей пользовательского свойства объекта Tiled. */

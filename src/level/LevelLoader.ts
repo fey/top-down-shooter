@@ -5,7 +5,7 @@ import { Player } from "../entities/Player";
 import { WeaponPickup } from "../entities/WeaponPickup";
 import type { WallDef } from "../types";
 import { createEnemy } from "./EnemyFactory";
-import { classifySpawn, readPickupWeaponId, tileToWall } from "./spawns";
+import { classifySpawn, KNOWN_SPAWN_IDS, readPickupWeaponId, tileToWall } from "./spawns";
 
 /** Результат загрузки уровня. wallLayer === null при аварийном fallback. */
 export interface LoadedLevel {
@@ -91,6 +91,15 @@ export function loadTiledLevel(
     const spawnId = obj.type || obj.name;
 
     const kind = classifySpawn(spawnId);
+    if (kind === null) {
+      // Объект есть на карте, но сущности из него не будет. Без предупреждения автор карты
+      // узнаёт об опечатке в Class только по отсутствию врага в бою.
+      console.warn(
+        `[LevelLoader] Unknown spawn "${spawnId}" at (${ox}, ${oy}) — skipped; ` +
+          `expected one of: ${KNOWN_SPAWN_IDS.join(", ")}`,
+      );
+      continue;
+    }
     if (kind === "player") {
       player = new Player(scene, ox, oy, deps.playerBullets);
       continue;

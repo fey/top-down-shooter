@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { classifySpawn, readPickupWeaponId, type TileLike, tileToWall } from "./spawns";
+import {
+  classifySpawn,
+  KNOWN_SPAWN_IDS,
+  readPickupWeaponId,
+  type TileLike,
+  tileToWall,
+} from "./spawns";
 
 describe("classifySpawn", () => {
   it("распознаёт все известные идентификаторы", () => {
@@ -13,6 +19,18 @@ describe("classifySpawn", () => {
   it("неизвестный идентификатор → null", () => {
     expect(classifySpawn("dragon")).toBeNull();
     expect(classifySpawn("")).toBeNull();
+  });
+});
+
+describe("KNOWN_SPAWN_IDS", () => {
+  // Список уходит в предупреждение автору карты («ожидался один из …»), поэтому он
+  // не должен разъезжаться с тем, что на самом деле распознаётся.
+  it("перечисляет ровно те идентификаторы, которые распознаёт classifySpawn", () => {
+    for (const id of KNOWN_SPAWN_IDS) {
+      expect(classifySpawn(id)).not.toBeNull();
+    }
+    expect(KNOWN_SPAWN_IDS).toContain("player_start");
+    expect(KNOWN_SPAWN_IDS).toContain("weapon_pickup");
   });
 });
 
