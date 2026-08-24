@@ -1,19 +1,9 @@
 # Triage Labels
 
-The skills speak in terms of five canonical triage roles. This file maps those roles to the actual label strings used in this repo's issue tracker (beads).
+Пять канонических triage-ролей используются как строки лейблов дословно: `needs-triage`,
+`needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. Когда скилл называет роль
+(«apply the AFK-ready triage label»), это `ready-for-agent`.
 
-| Label in mattpocock/skills | Label in our tracker | Meaning                                  |
-| -------------------------- | -------------------- | ---------------------------------------- |
-| `needs-triage`             | `needs-triage`       | Maintainer needs to evaluate this issue  |
-| `needs-info`               | `needs-info`         | Waiting on reporter for more information |
-| `ready-for-agent`          | `ready-for-agent`    | Fully specified, ready for an AFK agent  |
-| `ready-for-human`          | `ready-for-human`    | Requires human implementation            |
-| `wontfix`                  | `wontfix`            | Will not be actioned                     |
-
-When a skill mentions a role (e.g. "apply the AFK-ready triage label"), use the corresponding label string from this table.
-
-Edit the right-hand column to match whatever vocabulary you actually use.
-
-In `bd`, labels are applied with `bd update <id> --add-label <label>` and removed with
-`--remove-label`. Filter by them with `bd list --label <label>` / `--label-any` / `--exclude-label`.
-No label needs to be created up front — `bd` accepts any string.
+В `bd` лейблы применяются `bd update <id> --add-label <label>`, снимаются `--remove-label`,
+фильтруются `bd list --label` / `--label-any` / `--exclude-label`. Заводить лейбл заранее не нужно —
+`bd` принимает любую строку.

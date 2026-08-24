@@ -36,6 +36,5 @@ the project doesn't use (reconsider) or there's a real gap (note it for `/domain
 
 ## Flag ADR conflicts
 
-If your output contradicts an existing ADR, surface it explicitly rather than silently overriding:
-
-> _Contradicts ADR-0007 (event-sourced orders) — but worth reopening because…_
+If your output contradicts an existing ADR, surface it explicitly rather than silently overriding —
+name the ADR and say why it's worth reopening, instead of quietly deciding the other way.
