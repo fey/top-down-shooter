@@ -61,6 +61,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.weapon = new Weapon(def);
     this.setTexture(playerTextureKey(def));
     this.syncBody();
+    this.scene.events.emit("weaponChanged", def.name);
   }
 
   /**

@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import type { Pathfinder } from "../ai/Pathfinder";
-import { COLOR_BG_GAME, PACK_ALERT_RADIUS, WEAPONS } from "../config";
+import { COLOR_BG_GAME, PACK_ALERT_RADIUS, PLAYER_HP, WEAPONS } from "../config";
 import { DebugOverlay } from "../debug/DebugOverlay";
 import { drawPathGrid } from "../debug/grid";
 import { drawDebugPaths } from "../debug/paths";
@@ -11,6 +11,7 @@ import type { WeaponPickup } from "../entities/WeaponPickup";
 import { loadTiledLevel } from "../level/LevelLoader";
 import type { LevelConfig } from "../level/levels";
 import { GAME_OVER_SCENE_KEY } from "./GameOverScene";
+import { HUD_SCENE_KEY, type HudInitData } from "./HUDScene";
 import { LEVEL_SELECT_SCENE_KEY } from "./LevelSelectScene";
 
 export const GAME_SCENE_KEY = "Game";
@@ -27,7 +28,8 @@ export class GameScene extends Phaser.Scene {
   private gridGraphics!: Phaser.GameObjects.Graphics;
   private debugPaths = false;
   private gameOver = false;
-  private hasEnemies = false;
+  private levelHadEnemies = false; // уровень стартовал с врагами → у него есть условие победы
+  private enemiesAlive = 0;
   private levelConfig: LevelConfig = { key: "level1-map" };
 
   constructor() {
@@ -37,7 +39,8 @@ export class GameScene extends Phaser.Scene {
   init(data: { level?: LevelConfig }): void {
     this.levelConfig = data.level ?? { key: "level1-map" };
     this.gameOver = false;
-    this.hasEnemies = false;
+    this.levelHadEnemies = false;
+    this.enemiesAlive = 0;
   }
 
   create(): void {
@@ -58,15 +61,23 @@ export class GameScene extends Phaser.Scene {
     });
     this.player = level.player;
     this.pathfinder = level.pathfinder;
-    this.hasEnemies = this.enemyGroup.getLength() > 0;
+    this.enemiesAlive = this.enemyGroup.countActive(true);
+    this.levelHadEnemies = this.enemiesAlive > 0;
 
-    // Статичная дебаг-сетка pathfinding: рисуется один раз, видимость — по F1
+    // Статичная дебаг-сетка pathfinding: рисуется один раз, видимость — по F1.
+    // Как и оверлей состояния, это инструмент разработки: в продакшн-сборке сетки нет,
+    // иначе игрок в релизе включал бы F1 и видел внутренности навигации.
     this.gridGraphics = this.add.graphics().setDepth(40).setVisible(false);
-    drawPathGrid(this.gridGraphics, this.pathfinder, level.mapW, level.mapH);
+    if (import.meta.env.DEV) {
+      drawPathGrid(this.gridGraphics, this.pathfinder, level.mapW, level.mapH);
+    }
 
     this.setupCollisions(level.wallLayer);
 
-    this.events.on("packAlert", (x: number, y: number) => {
+    // Обработчики держим в переменных и снимаем на shutdown: сцена — один и тот же
+    // экземпляр с одним и тем же эмиттером, а create() вызывается на каждый рестарт
+    // уровня. Без снятия подписки после второго боя копились бы и дублировали работу.
+    const onPackAlert = (x: number, y: number) => {
       for (const obj of this.enemyGroup.getChildren()) {
         const e = obj as Enemy;
         if (e.state === EnemyState.IDLE) {
@@ -76,27 +87,53 @@ export class GameScene extends Phaser.Scene {
           }
         }
       }
-    });
+    };
+    this.events.on("packAlert", onPackAlert);
 
     this.cameras.main.startFollow(this.player);
     this.cameras.main.setBounds(0, 0, level.mapW, level.mapH);
 
-    this.events.once("playerDied", () => {
+    const onPlayerDied = () => {
       this.gameOver = true;
-      this.scene.start(GAME_OVER_SCENE_KEY, { win: false });
-    });
+      this.scene.start(GAME_OVER_SCENE_KEY, { win: false, level: this.levelConfig });
+    };
+    this.events.once("playerDied", onPlayerDied);
 
     this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.ESC).once("down", () => {
       this.scene.start(LEVEL_SELECT_SCENE_KEY);
     });
 
-    this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.F1).on("down", () => {
-      this.debugPaths = !this.debugPaths;
-      this.gridGraphics.setVisible(this.debugPaths);
-      if (!this.debugPaths) this.pathGraphics.clear();
+    if (import.meta.env.DEV) {
+      this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.F1).on("down", () => {
+        this.debugPaths = !this.debugPaths;
+        this.gridGraphics.setVisible(this.debugPaths);
+        if (!this.debugPaths) this.pathGraphics.clear();
+      });
+    }
+
+    // HUD — параллельная сцена поверх боя. Ей отдаётся эмиттер этой сцены (события
+    // hpChanged / weaponChanged / enemiesChanged) и начальный снимок: подписка ловит
+    // только изменения, а стартовые значения взять ей больше негде.
+    const hudData: HudInitData = {
+      events: this.events,
+      hp: this.player.hp,
+      maxHp: PLAYER_HP,
+      weaponName: this.player.weaponDef.name,
+      enemiesLeft: this.enemiesAlive,
+    };
+    this.scene.launch(HUD_SCENE_KEY, hudData);
+
+    this.events.once("shutdown", () => {
+      this.scene.stop(HUD_SCENE_KEY);
+      this.events.off("packAlert", onPackAlert);
+      this.events.off("playerDied", onPlayerDied);
     });
 
-    new DebugOverlay(this, this.player, this.enemyGroup);
+    // Дебаг-оверлей — инструмент разработки: в продакшн-сборке его нет вовсе
+    // (import.meta.env.DEV — константа Vite, ветка вырезается при сборке).
+    if (import.meta.env.DEV) {
+      new DebugOverlay(this, this.player, this.enemyGroup);
+    }
   }
 
   /** Навешивает все коллизии: враг↔враг, пули↔цели, всё↔стены (если стены есть). */
@@ -153,12 +190,20 @@ export class GameScene extends Phaser.Scene {
       if (enemy.active) (enemy as Enemy).tick(this.player);
     }
 
-    if (this.hasEnemies && this.enemyGroup.countActive(true) === 0) {
-      this.gameOver = true;
-      this.scene.start(GAME_OVER_SCENE_KEY, { win: true });
+    // Считаем живых каждый кадр, но событие даём только на изменение — так HUD не
+    // перерисовывает строку 60 раз в секунду, а условие победы читает то же число.
+    const alive = this.enemyGroup.countActive(true);
+    if (alive !== this.enemiesAlive) {
+      this.enemiesAlive = alive;
+      this.events.emit("enemiesChanged", alive);
     }
 
-    if (this.debugPaths) {
+    if (this.levelHadEnemies && alive === 0) {
+      this.gameOver = true;
+      this.scene.start(GAME_OVER_SCENE_KEY, { win: true, level: this.levelConfig });
+    }
+
+    if (import.meta.env.DEV && this.debugPaths) {
       drawDebugPaths(
         this.pathGraphics,
         this.enemyGroup.getChildren().map((obj) => obj as Enemy),

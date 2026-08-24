@@ -1,13 +1,16 @@
 import Phaser from "phaser";
 import {
   COLOR_BG_MENU,
-  COLOR_MENU_BTN,
-  COLOR_MENU_BTN_BG,
-  COLOR_MENU_BTN_HOVER,
   COLOR_TEXT,
+  COLOR_TEXT_MUTED,
+  MENU_BTN_SPACING,
+  MENU_HEADING_FONT_PX,
+  MENU_SUBTITLE_FONT_PX,
 } from "../config";
 import { LEVELS } from "../level/levels";
+import { addMenuButton } from "../ui/menuButton";
 import { GAME_SCENE_KEY } from "./GameScene";
+import { MAIN_MENU_SCENE_KEY } from "./MainMenuScene";
 
 export const LEVEL_SELECT_SCENE_KEY = "LevelSelect";
 
@@ -20,33 +23,22 @@ export class LevelSelectScene extends Phaser.Scene {
 
   create(): void {
     const { width, height } = this.scale;
-    const BUTTON_SPACING = 56;
-    const startY = height / 2 - ((LEVELS.length - 1) / 2) * BUTTON_SPACING;
+    const startY = height / 2 - ((LEVELS.length - 1) / 2) * MENU_BTN_SPACING;
 
     this.cameras.main.setBackgroundColor(COLOR_BG_MENU);
 
     this.add
       .text(width / 2, startY - 70, "Выберите уровень", {
-        fontSize: "36px",
+        fontSize: `${MENU_HEADING_FONT_PX}px`,
         color: COLOR_TEXT,
       })
       .setOrigin(0.5);
 
     LEVELS.forEach(({ label, config }, i) => {
-      const y = startY + i * BUTTON_SPACING;
-      const btn = this.add
-        .text(width / 2, y, label, {
-          fontSize: "26px",
-          color: COLOR_MENU_BTN,
-          backgroundColor: COLOR_MENU_BTN_BG,
-          padding: { x: 20, y: 8 },
-        })
-        .setOrigin(0.5)
-        .setInteractive({ useHandCursor: true });
-
-      btn.on("pointerover", () => btn.setStyle({ color: COLOR_MENU_BTN_HOVER }));
-      btn.on("pointerout", () => btn.setStyle({ color: COLOR_MENU_BTN }));
-      btn.on("pointerdown", () => this.scene.start(GAME_SCENE_KEY, { level: config }));
+      const y = startY + i * MENU_BTN_SPACING;
+      addMenuButton(this, width / 2, y, label, () =>
+        this.scene.start(GAME_SCENE_KEY, { level: config }),
+      );
     });
 
     const KC = Phaser.Input.Keyboard.KeyCodes;
@@ -68,5 +60,15 @@ export class LevelSelectScene extends Phaser.Scene {
           .once("down", () => this.scene.start(GAME_SCENE_KEY, { level: config }));
       }
     });
+
+    // Назад в меню — замыкает петлю: из выбора уровня можно выйти, не начиная бой.
+    this.input.keyboard?.addKey(KC.ESC).once("down", () => this.scene.start(MAIN_MENU_SCENE_KEY));
+
+    this.add
+      .text(width / 2, startY + LEVELS.length * MENU_BTN_SPACING + 20, "Esc — в меню", {
+        fontSize: `${MENU_SUBTITLE_FONT_PX}px`,
+        color: COLOR_TEXT_MUTED,
+      })
+      .setOrigin(0.5);
   }
 }

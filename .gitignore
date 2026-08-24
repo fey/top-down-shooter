@@ -11,3 +11,6 @@ dist/
 *.log
 
 *.tiled-session
+
+# Служебные git worktree агентов
+.claude/worktrees/

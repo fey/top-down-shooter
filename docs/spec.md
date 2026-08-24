@@ -50,9 +50,11 @@ top-down-shooter/
     scenes/
       BootScene.ts         # точка входа, запускает PreloadScene
       PreloadScene.ts      # генерирует текстуры процедурно (Phaser Graphics)
-      LevelSelectScene.ts  # выбор уровня (Level 1 / Level 2)
+      MainMenuScene.ts     # стартовый экран: кнопка «Начать», справка по управлению
+      LevelSelectScene.ts  # выбор уровня по реестру level/levels.ts
       GameScene.ts         # основная игровая сцена
-      GameOverScene.ts     # экран победы/поражения
+      HUDScene.ts          # оверлей поверх боя: HP, оружие, счётчик врагов
+      GameOverScene.ts     # экран победы/поражения, кнопки «Заново» и «В меню»
     entities/
       Player.ts            # игрок: движение, прицеливание, стрельба, HP
       Enemy.ts             # базовый класс: state machine, pathfinding
@@ -61,6 +63,9 @@ top-down-shooter/
       SmartBot.ts          # умный бот уровня игрока: упреждение, уклонение, укрытия, маневр
       Bullet.ts            # снаряд с TTL и коллизиями
       WeaponPickup.ts      # лежащее на полу оружие (статическое тело, overlap с игроком)
+    ui/
+      hud.ts               # чистое ядро HUD: строки HP и счётчика врагов, цвет по порогу
+      menuButton.ts        # кнопка меню: единый вид и поведение во всех сценах-меню
     weapons/
       Weapon.ts            # оружие по дескриптору WeaponDef: кулдаун, спавн пуль/веера
       pellets.ts           # чистое ядро: раскладка веера дробинок по углам
@@ -81,14 +86,20 @@ top-down-shooter/
 ### Поток сцен
 
 ```
-Boot → Preload → LevelSelect → Game → GameOver
+Boot → Preload → MainMenu → LevelSelect → Game (+ HUD) → GameOver ⇄ MainMenu
 ```
 
+Петля замкнута: из GameOver можно перезапустить тот же уровень или вернуться в меню, не
+перезагружая страницу.
+
 - **BootScene** — точка входа, немедленно запускает PreloadScene.
-- **PreloadScene** — грузит тайлсет и карты, остальные текстуры генерирует процедурно (`Graphics` и `DynamicTexture`, спрайты сущностей из файлов не загружаются). После завершения — LevelSelectScene.
-- **LevelSelectScene** — меню по реестру `level/levels.ts` (сейчас три уровня), клик по строке.
-- **GameScene** — главная сцена. Загружает Tiled-карту через `LevelLoader`, создаёт игрока, врагов, пикапы, управляет коллизиями. ESC → LevelSelect, F1 → debug path overlay.
-- **GameOverScene** — финальный экран с текстом WIN/LOSE. Для рестарта — обновление страницы (или ESC/клик для перехода к выбору уровня — реализовано частично).
+- **PreloadScene** — грузит тайлсет и карты, остальные текстуры генерирует процедурно (`Graphics` и `DynamicTexture`, спрайты сущностей из файлов не загружаются). После завершения — MainMenuScene.
+- **MainMenuScene** — стартовый экран: кнопка «Начать» (или Enter/Space) → LevelSelect, справка по управлению.
+- **LevelSelectScene** — меню по реестру `level/levels.ts` (сейчас три уровня): клик по строке или цифра 1–9; ESC → MainMenu.
+- **GameScene** — главная сцена. Загружает Tiled-карту через `LevelLoader`, создаёт игрока, врагов, пикапы, управляет коллизиями. ESC → LevelSelect, F1 → debug path overlay (только в dev-сборке). Запускает HUDScene параллельно (`scene.launch`) и гасит её на своём `shutdown`.
+- **HUDScene** — оверлей поверх боя: HP (краснеет на `HUD_HP_LOW` и ниже), название текущего оружия, счётчик живых врагов. Своя камера, которая не следует за игроком, поэтому надписям не нужен `setScrollFactor(0)`. Экземпляр `GameScene` не получает: эмиттер событий и начальный снимок приходят данными `scene.launch`. Форматирование строк — в чистом `ui/hud.ts` (зажим отрицательного HP, цвет по порогу) с unit-тестами.
+- **GameOverScene** — экран WIN/LOSE. Получает от `GameScene` исход и конфиг уровня, поэтому «Заново» (кнопка или R) перезапускает тот же уровень, а «В меню» (кнопка или ESC) возвращает в MainMenu — без перезагрузки страницы.
+- **DebugOverlay** — не сцена, а оверлей внутри `GameScene`; создаётся только при `import.meta.env.DEV`, в продакшн-сборку не попадает вовсе (ветка вырезается вместе с классом). Под тем же гейтом и F1-отладка навигации: в релизе сетка не рисуется и клавиша не слушается.
 
 ### Символьный рендер
 
@@ -113,8 +124,9 @@ Sprite + Arcade Physics body. Управление: WASD (нормализова
 ### Оружие (`Weapon` + реестр `WEAPONS`)
 
 Оружие — **данные, а не подклассы**: `WEAPONS` в `config.ts` хранит `WeaponDef`
-(`glyph`, `cooldown`, `bulletSpeed`, `damage`, `pelletCount`, `spreadRad`, `aimSpreadRad`,
-`barrel`), а единственный класс `Weapon` его исполняет. Добавить пушку = добавить запись в
+(`name`, `glyph`, `cooldown`, `bulletSpeed`, `damage`, `pelletCount`, `spreadRad`, `aimSpreadRad`,
+`barrel`), а единственный класс `Weapon` его исполняет. `name` — человекочитаемое имя, которое
+показывает HUD; его уникальность и непустота проверяются инвариантом в `config.test.ts`. Добавить пушку = добавить запись в
 реестр: текстура игрока и текстура пикапа генерируются из `barrel` и `glyph` автоматически.
 
 - `tryFire(...)` гейтит темп через чистую `canFire` (`weapons/cooldown.ts`).
@@ -247,13 +259,15 @@ Sprite + Arcade Physics body. Управление: WASD (нормализова
 - Overlap игрок↔`pickups` (статическая группа) → смена оружия и уничтожение пикапа.
 - Тик AI каждого врага вызывается в `update()`.
 - Pack alert срабатывает при агро: `GameScene.alertPackNear(enemy)`.
-- При 0 живых врагов → GameOver (WIN). При смерти игрока → GameOver (LOSE).
+- При 0 живых врагов → GameOver (WIN). При смерти игрока → GameOver (LOSE). В GameOver уходит и конфиг уровня — для кнопки «Заново».
+- События `scene.events`, на которые подписываются оверлеи: `hpChanged` (эмитит `Player.takeDamage`), `weaponChanged` (`Player.equip`, отдаёт имя оружия), `enemiesChanged` (`GameScene.update`, только при изменении числа живых), `playerDied`, `enemyDied`, `packAlert`.
 
 ## Баланс (`src/config.ts`)
 
 | Параметр | Значение | Пояснение |
 |----------|----------|-----------|
 | `PLAYER_HP` | 5 | |
+| `HUD_HP_LOW` | 2 | HP, начиная с которого счётчик в HUD краснеет — два попадания до смерти |
 | `PLAYER_SPEED` | 200 px/s | |
 | `MAP_WIDTH` | 1920 px | |
 | `MAP_HEIGHT` | 1080 px | |

@@ -50,6 +50,14 @@ describe("реестр оружия", () => {
     expect(new Set(glyphs).size).toBe(glyphs.length);
   });
 
+  it("названия уникальны и непусты — HUD показывает их игроку", () => {
+    const names = weapons.map((w) => w.name);
+    for (const w of weapons) {
+      expect(w.name.trim().length, `оружие ${w.id}`).toBeGreaterThan(0);
+    }
+    expect(new Set(names).size).toBe(names.length);
+  });
+
   it("у каждого оружия непустой глиф в один символ", () => {
     for (const w of weapons) {
       expect(w.glyph.length, `оружие ${w.id}`).toBe(1);

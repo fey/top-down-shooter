@@ -6,6 +6,7 @@
       "!**/dist",
       "!**/node_modules",
       "!**/.beads",
+      "!**/.claude",
       "!**/docs",
       "!**/*.tsx",
       "!**/public/assets/maps",

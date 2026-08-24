@@ -22,7 +22,7 @@ import {
   WEAPONS,
 } from "../config";
 import { LEVELS } from "../level/levels";
-import { LEVEL_SELECT_SCENE_KEY } from "./LevelSelectScene";
+import { MAIN_MENU_SCENE_KEY } from "./MainMenuScene";
 
 export const PRELOAD_SCENE_KEY = "Preload";
 
@@ -84,7 +84,7 @@ export class PreloadScene extends Phaser.Scene {
 
     gfx.destroy();
 
-    this.scene.start(LEVEL_SELECT_SCENE_KEY);
+    this.scene.start(MAIN_MENU_SCENE_KEY);
   }
 
   /**

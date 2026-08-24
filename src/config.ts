@@ -104,6 +104,25 @@ export const PICKUP_SIZE = 32; // сторона квадрата пикапа, 
 export const PICKUP_FRAME_WIDTH = 3; // толщина рамки, px
 export const PICKUP_GLYPH_FONT_PX = 24; // кегль глифа; влезает в 26px просвета внутри рамки
 
+// --- HUD (оверлейная сцена поверх игры) ---
+// Три показателя, которые нужны в бою: сколько осталось жить, чем стреляешь и сколько
+// врагов ещё живо. HP и оружие в левом нижнем углу (взгляд там же, где персонаж),
+// счётчик врагов — в правом верхнем, чтобы не спорить с дебаг-оверлеем слева сверху.
+export const HUD_MARGIN = 14; // отступ от края экрана, px
+export const HUD_HP_FONT_PX = 26; // HP — самый крупный элемент HUD
+export const HUD_WEAPON_FONT_PX = 18;
+export const HUD_ENEMIES_FONT_PX = 20;
+export const HUD_LINE_GAP = 8; // зазор между строкой HP и строкой оружия, px
+export const HUD_HP_LOW = 2; // HP, начиная с которого счётчик краснеет (два попадания до смерти)
+
+// --- Меню и экраны ---
+export const MENU_TITLE_FONT_PX = 52; // заголовок главного меню
+export const MENU_OUTCOME_FONT_PX = 64; // «ПОБЕДА» / «ПОРАЖЕНИЕ» — крупнее всех надписей
+export const MENU_HEADING_FONT_PX = 36; // заголовок экрана внутри петли («Выберите уровень»)
+export const MENU_SUBTITLE_FONT_PX = 20;
+export const MENU_BTN_FONT_PX = 26;
+export const MENU_BTN_SPACING = 56; // шаг между кнопками в вертикальном столбце, px
+
 // --- Палитра ---
 // Тинты спрайтов (0xRRGGBB)
 export const COLOR_PLAYER_HIT_TINT = 0xff4444; // красная вспышка игрока при уроне
@@ -134,6 +153,7 @@ export const COLOR_MENU_BTN_HOVER = "#ffffff";
 export const COLOR_MENU_BTN_BG = "#223322";
 export const COLOR_WIN = "#88ff88";
 export const COLOR_LOSE = "#ff4444";
+export const COLOR_HUD_HP_LOW = COLOR_LOSE; // HP на пороге HUD_HP_LOW — тем же красным, что «ПОРАЖЕНИЕ»
 
 // --- Реестр оружия ---
 // Оружие — данные, а не подклассы: один `Weapon` читает дескриптор. Добавить пушку =
@@ -150,6 +170,7 @@ export interface BarrelDef {
 /** Дескриптор оружия. `pelletCount`/`spreadRad` описывают веер (1 и 0 — одиночный выстрел). */
 export interface WeaponDef {
   id: string;
+  name: string; // человекочитаемое имя для HUD; уникально по реестру
   glyph: string; // один символ на пикапе; уникален по реестру (проверяется config.test.ts)
   cooldown: number; // мс между выстрелами
   bulletSpeed: number; // px/s
@@ -163,6 +184,7 @@ export interface WeaponDef {
 export const WEAPONS = {
   pistol: {
     id: "pistol",
+    name: "Пистолет",
     glyph: "P",
     cooldown: PISTOL_COOLDOWN,
     bulletSpeed: BULLET_SPEED,
@@ -178,6 +200,7 @@ export const WEAPONS = {
   },
   shotgun: {
     id: "shotgun",
+    name: "Дробовик",
     glyph: "S",
     cooldown: SHOTGUN_COOLDOWN,
     bulletSpeed: BULLET_SPEED,
@@ -190,6 +213,7 @@ export const WEAPONS = {
   },
   rifle: {
     id: "rifle",
+    name: "Винтовка",
     glyph: "R",
     cooldown: RIFLE_COOLDOWN,
     bulletSpeed: RIFLE_BULLET_SPEED,
@@ -202,6 +226,7 @@ export const WEAPONS = {
   },
   automat: {
     id: "automat",
+    name: "Автомат",
     glyph: "A",
     cooldown: AUTOMAT_COOLDOWN,
     bulletSpeed: AUTOMAT_BULLET_SPEED,
