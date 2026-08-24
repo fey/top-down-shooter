@@ -99,7 +99,7 @@ Phaser 3, у Biome 2 — другой формат конфига, чем у Bio
 | `docs/roadmap.md` | Оставшаяся работа (M9 — полировка) и что сознательно за скоупом |
 | `docs/how-to-add-level.md` | Задача трогает карты: настройки Tiled, слои, экспорт, регистрация |
 | `docs/pathfinding-debug.md` | Отладка навигации: F1-оверлей и как читать его линии |
-| `docs/superpowers/specs/2026-06-05-theta-star-pathfinding-design.md` | Изменение поиска пути |
+| `docs/specs/2026-06-05-theta-star-pathfinding-design.md` | Изменение поиска пути |
 
 `CONTEXT.md` закрепляет язык проекта («символьный рендер», «глиф», «веер» против «неточности»,
 «пикап», «спавн»). Эти слова употребляются в коде и спецификации — писать синонимы значит
@@ -172,7 +172,7 @@ npm run test:watch                       # watch-режим
   сценах и сущностях; позиции игрока, врагов и пикапов задавать объектами слоя `spawns`, а не кодом.
 - **Спецификация AI врагов.** Перед изменением поведения врагов (`src/entities/Enemy.ts`,
   `MeleeEnemy.ts`, `ShooterEnemy.ts`, `SmartBot.ts`, `src/ai/`) прочитать `docs/spec.md` и
-  `docs/superpowers/specs/2026-06-05-theta-star-pathfinding-design.md`. Изменения должны либо
+  `docs/specs/2026-06-05-theta-star-pathfinding-design.md`. Изменения должны либо
   соответствовать спецификации, либо явно обновлять её в том же коммите.
 - **Функциональное ядро, тонкая оболочка.** Логику решений (навигация, бой, геометрия) держать в
   чистых Phaser-free функциях/классах (`src/ai/grid.ts`, `src/ai/geometry.ts`, `src/ai/separation.ts`,
