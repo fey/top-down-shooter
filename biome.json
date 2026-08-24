@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.4.15/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.10/schema.json",
   "files": {
     "includes": [
       "**",
@@ -8,7 +8,8 @@
       "!**/.beads",
       "!**/docs",
       "!**/*.tsx",
-      "!**/public/assets/maps"
+      "!**/public/assets/maps",
+      "!**/kenney_top-down-shooter"
     ]
   },
   "formatter": {
@@ -20,7 +21,7 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true
+      "preset": "recommended"
     }
   },
   "javascript": {
