@@ -4,7 +4,6 @@
 AGENTS.md — симлинк на этот файл; это один и тот же документ.
 
 
-<!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:7510c1e2 -->
 ## Beads Issue Tracker
 
 This project uses **bd (beads)** for issue tracking. Run `bd prime` to see full workflow context and commands.
@@ -25,6 +24,20 @@ bd close <id>         # Complete work
 - Use `bd remember` for persistent knowledge — do NOT use MEMORY.md files
 
 **Architecture in one line:** issues live in a local Dolt DB; sync uses `refs/dolt/data` on your git remote; `.beads/issues.jsonl` is a passive export. See https://github.com/gastownhall/beads/blob/main/docs/SYNC_CONCEPTS.md for details and anti-patterns.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in **beads (`bd`)**, not GitHub Issues. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five canonical roles, used verbatim as `bd` labels. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `CONTEXT.md` at the root, ADRs in `docs/adr/`. See `docs/agents/domain.md`.
 
 ## Session Completion
 
@@ -50,64 +63,126 @@ bd close <id>         # Complete work
 - NEVER stop before pushing - that leaves work stranded locally
 - NEVER say "ready to push when you are" - YOU must push
 - If push fails, resolve and retry until it succeeds
-<!-- END BEADS INTEGRATION -->
-
 
 ## Обзор проекта
 
-Небольшой браузерный top-down шутер: одна статичная карта, два типа врагов, в процессе разработки.
-- **Текущее состояние** (архитектура, баланс, что реализовано): `docs/spec.md` — читать в первую очередь.
-- **Оставшаяся работа** (milestone M8–M9): `docs/roadmap.md`.
+Браузерный top-down шутер, прототип в разработке: три карты, нарисованные в Tiled, три типа
+врагов (melee, shooter и `SmartBot` — соперник уровня игрока), четыре оружия, которые меняются
+только подбором пикапа с пола.
 
-## Стек
+**Стек — на чём сидим сейчас** (обновление: `make update-deps`, следом правка этой таблицы):
 
-- **Phaser 4** (4.1.0, 2D игровой движок).
-- **TypeScript** в strict-режиме.
-- **Vite** для dev-сервера и сборки.
-- **Biome** для lint + format (замена ESLint + Prettier) — единственный `biome.json`.
+| Пакет | Версия |
+|-------|--------|
+| Phaser | 4.2.1 |
+| TypeScript | 7.0.2 |
+| Vite | 8.2.2 |
+| Vitest | 4.1.11 |
+| Biome | 2.5.10 |
+| Node | 24 локально, 20 в CI |
+
+Каждый из них — мажор свежее того, что модель помнит по умолчанию: у Phaser 4 другой API, чем у
+Phaser 3, у Biome 2 — другой формат конфига, чем у Biome 1, TypeScript 7 — нативная реализация
+компилятора. Писать по идиомам установленной версии, сверяясь с `node_modules` или документацией
+этого мажора; диапазоны в `package.json` (`^`) — источник правды для самих чисел.
+
+Куда смотреть:
+
+| Документ | Когда читать |
+|----------|--------------|
+| `docs/spec.md` | Первым. Что реализовано сейчас: архитектура, поведение врагов, все числа баланса |
+| `CONTEXT.md` | Глоссарий проекта. Перед тем как назвать сущность в коде, коммите или ответе |
+| `docs/roadmap.md` | Оставшаяся работа (M8 — меню и HUD, M9 — полировка) и что сознательно за скоупом |
+| `docs/how-to-add-level.md` | Задача трогает карты: настройки Tiled, слои, экспорт, регистрация |
+| `docs/pathfinding-debug.md` | Отладка навигации: F1-оверлей и как читать его линии |
+| `docs/superpowers/specs/2026-06-05-theta-star-pathfinding-design.md` | Изменение поиска пути |
+
+`CONTEXT.md` закрепляет язык проекта («символьный рендер», «глиф», «веер» против «неточности»,
+«пикап», «спавн»). Эти слова употребляются в коде и спецификации — писать синонимы значит
+разойтись с ними.
 
 ## Сборка и проверка
 
+Команды — цели `Makefile` (`make dev`, `make build`, `make preview`, `make clean`, …).
+
+**Quality gates перед коммитом кода:** `make typecheck`, `make check`, `make test`. CI гоняет их же
+на каждый push и PR (`make check`, `make test`, `make build` — последний включает `tsc --noEmit`).
+
+Один тест-файл и фильтр по имени теста мимо Makefile:
+
 ```bash
-make install    # npm ci
-make dev        # Vite dev server
-make build      # tsc + vite build
-make preview    # vite preview
-make check      # Biome lint + format check
-make format     # Biome format --write
-make typecheck  # tsc --noEmit
-make test       # vitest run — unit-тесты чистого ядра
-make clean      # rm -rf dist
+npx vitest run src/ai/grid.test.ts       # один файл
+npx vitest run -t "diagonal"             # тесты, чьё имя содержит подстроку
+npm run test:watch                       # watch-режим
 ```
 
 **Unit-тесты (vitest)** покрывают только чистое (Phaser-free) ядро: навигацию (`src/ai/grid.ts`),
 боевые решения (`src/ai/behaviors/`), геометрию LoS (`src/ai/geometry.ts`), отталкивание от стен
-(`src/ai/separation.ts`), кулдаун оружия и веер дробинок (`src/weapons/`), парсинг уровня
-(`src/level/spawns.ts`) и инварианты
-баланса (`src/config.test.ts`). Тесты колокейтятся рядом с модулем (`foo.ts` → `foo.test.ts`),
-гоняются в окружении `node` и **не импортируют Phaser**. Перед коммитом изменений кода —
-`make test` входит в quality gates наравне с `make typecheck` и `make check`.
+(`src/ai/separation.ts`), кулдаун, веер и неточность оружия (`src/weapons/`), парсинг уровня
+(`src/level/spawns.ts`) и инварианты баланса (`src/config.test.ts`). Тесты колокейтятся рядом с
+модулем (`foo.ts` → `foo.test.ts`), гоняются в окружении `node` и **не импортируют Phaser**.
 
 **Геймплей тестами не покрыт** — проверка ручная (открыть dev-сервер, воспроизвести поведение).
 У каждого milestone в `docs/roadmap.md` свой чеклист **Verify**.
 
-**Проверка геймплея и управления — только вручную пользователем.** Не запускать Playwright и не симулировать ввод (нажатия клавиш, клики, drag) через браузерную автоматизацию для проверки управления персонажем, стрельбы и прочего геймплея. Вместо этого: запустить dev-сервер и попросить пользователя проверить, дав короткий чеклист, что именно смотреть. Разрешено без ограничений: открыть страницу, сделать скриншот, посмотреть консоль браузера (`navigate_page`, `take_screenshot`, `list_console_messages`).
+**Проверка геймплея и управления — только вручную пользователем.** Не запускать Playwright и не
+симулировать ввод (нажатия клавиш, клики, drag) через браузерную автоматизацию для проверки
+управления персонажем, стрельбы и прочего геймплея. Вместо этого: запустить dev-сервер и попросить
+пользователя проверить, дав короткий чеклист, что именно смотреть. Разрешено без ограничений:
+открыть страницу, сделать скриншот, посмотреть консоль браузера (`navigate_page`, `take_screenshot`,
+`list_console_messages`).
 
 ## Обзор архитектуры
 
-Полные детали — в `docs/spec.md`. Спецификация поиска пути врагов: `docs/superpowers/specs/2026-06-05-theta-star-pathfinding-design.md`.
+Полные детали — в `docs/spec.md`; ниже только скелет, чтобы не читать пять файлов ради ориентации.
+
+- **Поток сцен:** `Boot → Preload → LevelSelect → Game → GameOver`. Каждая сцена экспортирует
+  собственную константу-ключ; `GameScene` — единственное место, где сходятся коллизии, тик AI и
+  условия победы/поражения.
+- **Уровень — данные, а не код.** Tiled-JSON в `public/assets/maps/<key>.json` со слоями
+  `floor` / `walls` / `spawns` → `LevelLoader` → чистые `level/spawns.ts` (классификация объекта,
+  чтение оружия пикапа) → `EnemyFactory`. Новая карта = экспорт JSON + строка в реестре
+  `src/level/levels.ts`.
+- **Оружие — данные, а не подклассы.** Реестр `WEAPONS` в `config.ts` хранит `WeaponDef`, единственный
+  класс `Weapon` его исполняет. Новая пушка = запись в реестре: текстуры игрока и пикапа
+  сгенерируются из `barrel` и `glyph` сами.
+- **Символьный рендер.** Спрайты не грузятся из файлов: `PreloadScene` генерирует текстуры сущностей
+  процедурно из чисел `config.ts`. Размер текстуры зависит от длины ствола, поэтому после смены
+  оружия тело пересчитывается (`Player.equip` → `syncBody`).
+- **Две группы пуль** (`playerBullets`, `enemyBullets`) — разделение делает правила коллизий
+  однозначными.
+- **События `GameScene`:** `hpChanged`, `playerDied`, `enemyDied`, `packAlert`.
 
 ## Соглашения и паттерны
 
-- **Работать milestone за milestone.** Каждый `Mx` в `docs/roadmap.md` — отдельный commit/PR; после него игра должна запускаться и проверяться в браузере. Не смешивать изменения нескольких milestone в одном коммите.
+- **Работать milestone за milestone.** Каждый `Mx` в `docs/roadmap.md` — отдельный commit/PR; после
+  него игра должна запускаться и проверяться в браузере. Не смешивать изменения нескольких milestone
+  в одном коммите.
 - **Strict TypeScript.** Без `any`, без `// @ts-ignore` без объяснения причины.
-- **Biome — единственный линтер/форматтер.** Не добавлять ESLint или Prettier; не бороться с дефолтами Biome.
-- **Числа в `config.ts`, данные в `level1.ts`.** Не хардкодить настроечные константы и раскладку уровня прямо в сценах или сущностях.
-- **Спецификация AI врагов.** Перед изменением поведения врагов (`src/entities/Enemy.ts`, `MeleeEnemy.ts`, `ShooterEnemy.ts`, `src/ai/`) прочитать `docs/spec.md` и `docs/superpowers/specs/2026-06-05-theta-star-pathfinding-design.md`. Изменения должны либо соответствовать спецификации, либо явно обновлять её в том же коммите.
-- **Функциональное ядро, тонкая оболочка.** Логику решений (навигация, бой, геометрия) держать в чистых Phaser-free функциях/классах (`src/ai/grid.ts`, `src/ai/geometry.ts`, `src/ai/separation.ts`, `src/ai/behaviors/`), которые принимают снимок состояния (числа/`Vec2`) и возвращают решение. Классы-сущности (наследники `Phaser.Physics.Arcade.Sprite`) — тонкая оболочка: собирают снимок, вызывают ядро, применяют результат (`setVelocity`, спавн пуль, смена `state`). Ядро не импортирует `phaser` → покрывается unit-тестами. Новую ошибкоопасную логику добавлять в ядро с тестом, а не в `tick()`.
-- **Сцены общаются через события.** HUD и другие оверлейные сцены подписываются на `scene.events` от `GameScene`; не получать экземпляр другой сцены напрямую.
-- **Ключи сцен хранятся рядом со сценами.** Каждый файл сцены экспортирует собственную константу-ключ (`BOOT_SCENE_KEY` и т.д.). Импортировать ключ целевой сцены при вызове `scene.start()`.
-- **За рамками прототипа** (см. roadmap): сохранения/прогресс, аудио, несколько уровней, управление с мобильного/геймпада, анимации спрайтов сверх статичного арта Kenney. Не добавлять без явного изменения скоупа.
+- **Biome — единственный линтер/форматтер.** Не добавлять ESLint или Prettier; не бороться с
+  дефолтами Biome.
+- **Числа — в `config.ts`, раскладка уровня — в Tiled-карте.** Настроечные константы не хардкодить в
+  сценах и сущностях; позиции игрока, врагов и пикапов задавать объектами слоя `spawns`, а не кодом.
+- **Спецификация AI врагов.** Перед изменением поведения врагов (`src/entities/Enemy.ts`,
+  `MeleeEnemy.ts`, `ShooterEnemy.ts`, `SmartBot.ts`, `src/ai/`) прочитать `docs/spec.md` и
+  `docs/superpowers/specs/2026-06-05-theta-star-pathfinding-design.md`. Изменения должны либо
+  соответствовать спецификации, либо явно обновлять её в том же коммите.
+- **Функциональное ядро, тонкая оболочка.** Логику решений (навигация, бой, геометрия) держать в
+  чистых Phaser-free функциях/классах (`src/ai/grid.ts`, `src/ai/geometry.ts`, `src/ai/separation.ts`,
+  `src/ai/behaviors/`), которые принимают снимок состояния (числа/`Vec2`) и возвращают решение.
+  Классы-сущности (наследники `Phaser.Physics.Arcade.Sprite`) — тонкая оболочка: собирают снимок,
+  вызывают ядро, применяют результат (`setVelocity`, спавн пуль, смена `state`). Ядро не импортирует
+  `phaser` → покрывается unit-тестами. Источники случайности (`Math.random`) остаются в оболочке,
+  ядро принимает бросок параметром. Новую ошибкоопасную логику добавлять в ядро с тестом, а не в
+  `tick()`.
+- **Сцены общаются через события.** Оверлейные сцены и оверлеи подписываются на `scene.events` от
+  `GameScene` (так устроен `debug/DebugOverlay`, так же должна работать будущая `HUDScene` из M8);
+  экземпляр другой сцены напрямую не получать.
+- **Ключи сцен хранятся рядом со сценами.** Каждый файл сцены экспортирует собственную константу-ключ
+  (`BOOT_SCENE_KEY` и т.д.). Импортировать ключ целевой сцены при вызове `scene.start()`.
+- **За рамками прототипа** (см. roadmap): сохранения/прогресс, аудио, патроны и боезапас, управление с
+  мобильного/геймпада, анимации спрайтов сверх статичного арта Kenney. Не добавлять без явного
+  изменения скоупа.
 
 ## Стиль общения
 

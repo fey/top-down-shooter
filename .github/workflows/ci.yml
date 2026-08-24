@@ -25,6 +25,9 @@ jobs:
       - name: Lint & format check
         run: make check
 
+      - name: Unit tests
+        run: make test
+
       - name: Build
         run: make build
 

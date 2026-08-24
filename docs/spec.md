@@ -4,7 +4,7 @@
 
 ## Стек
 
-- **Phaser 4** (4.1.0) — 2D-движок.
+- **Phaser 4** — 2D-движок (точные версии стека — в `CLAUDE.md`).
 - **TypeScript** в строгом режиме (`strict: true`).
 - **Vite** — dev-сервер и сборка.
 - **Biome** — линт и форматирование (вместо ESLint + Prettier), единый `biome.json`.
