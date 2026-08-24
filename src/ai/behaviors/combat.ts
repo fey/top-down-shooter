@@ -10,7 +10,7 @@ export type KiteAction = "retreat" | "advance" | "strafe";
 
 /**
  * Поддержание боевой дистанции: ближе retreatDist — отступать, дальше advanceDist —
- * сближаться, между — боковой маневр (strafe). Порядок проверок задаёт приоритет.
+ * сближаться, между — стрейф. Порядок проверок задаёт приоритет.
  */
 export function kiteAction(dist: number, retreatDist: number, advanceDist: number): KiteAction {
   if (dist < retreatDist) return "retreat";

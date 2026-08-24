@@ -152,7 +152,7 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
   }
 
   /**
-   * Боковое движение (circle-strafe) перпендикулярно направлению на игрока.
+   * Стрейф: движение перпендикулярно направлению на игрока со сменой стороны.
    * Знак направления переворачивается каждые flipPeriodMs мс.
    */
   protected applyStrafe(player: Player, speed: number, flipPeriodMs: number, now: number): void {
