@@ -33,6 +33,8 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
   protected walls: WallDef[] | null = null;
   /** LoS к игроку, кэшируется наследниками в начале каждого tick(). */
   protected losCache = false;
+  /** LoS на прошлом тике: по фронту «было → нет» решается пересчёт пути. */
+  protected prevLosCache = false;
 
   /** Последняя позиция, где игрок был виден. Заполняется через rememberLastKnown(). */
   protected readonly lastKnownPos = new Phaser.Math.Vector2();
@@ -76,6 +78,19 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
   protected hasLoS(player: Player): boolean {
     if (this.walls === null) return true;
     return !anyWallBlocks(this.x, this.y, player.x, player.y, this.walls);
+  }
+
+  /**
+   * Снимок видимости на начало тика: сдвигает прошлое значение, пересчитывает текущее и,
+   * если игрок виден, запоминает его позицию. Один вызов вместо трёх строк в каждом
+   * наследнике — иначе легко забыть сдвинуть prevLosCache и потерять фронт потери LoS.
+   */
+  protected refreshLoS(player: Player): void {
+    this.prevLosCache = this.losCache;
+    this.losCache = this.hasLoS(player);
+    if (this.losCache) {
+      this.rememberLastKnown(player.x, player.y);
+    }
   }
 
   /** Текущее закэшированное LoS-состояние — для дебаг-отрисовки. */

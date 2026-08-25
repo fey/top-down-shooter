@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { chaseDecision } from "../ai/behaviors/navigation";
 import {
   ENEMY_AGGRO_RANGE,
   MELEE_ATTACK_RANGE,
@@ -15,7 +16,6 @@ import type { Player } from "./Player";
 
 export class MeleeEnemy extends Enemy {
   private lastAttackTime = 0;
-  private prevLosCache = false;
   private searchEnteredTime = 0;
 
   constructor(scene: Phaser.Scene, x: number, y: number, walls: WallDef[]) {
@@ -25,11 +25,7 @@ export class MeleeEnemy extends Enemy {
 
   tick(player: Player): void {
     this.faceTarget(player.x, player.y);
-    this.prevLosCache = this.losCache;
-    this.losCache = this.hasLoS(player);
-    if (this.losCache) {
-      this.rememberLastKnown(player.x, player.y);
-    }
+    this.refreshLoS(player);
 
     const dist = Phaser.Math.Distance.Between(this.x, this.y, player.x, player.y);
 
@@ -43,21 +39,14 @@ export class MeleeEnemy extends Enemy {
         break;
 
       case EnemyState.CHASE: {
-        if (this.losCache) {
-          // Есть прямая видимость — идём прямо к игроку
+        const nav = chaseDecision(this.losCache, this.prevLosCache, this.hasLastKnown);
+        if (nav.adoptPlayerAsLastKnown) this.rememberLastKnown(player.x, player.y);
+        if (nav.repath) this.invalidatePath();
+
+        if (nav.target === "player") {
           this.moveAlongPath(new Phaser.Math.Vector2(player.x, player.y), MELEE_ENEMY_SPEED);
           if (dist < MELEE_ATTACK_RANGE) this.state = EnemyState.ATTACK;
         } else {
-          // LoS потерян — идём к последней известной позиции игрока
-          if (!this.hasLastKnown) {
-            // Агро пришло через packAlert — брать текущую позицию как fallback
-            this.rememberLastKnown(player.x, player.y);
-          }
-          // При только что потерянном LoS — принудительно пересчитать путь,
-          // чтобы не использовать устаревший маршрут к игроку
-          if (this.prevLosCache) {
-            this.invalidatePath();
-          }
           this.moveAlongPath(this.lastKnownPos, MELEE_ENEMY_SPEED);
           // Переходим в SEARCH только когда физически добрались до lastKnownPos
           const distToLkp = Phaser.Math.Distance.BetweenPoints(this, this.lastKnownPos);

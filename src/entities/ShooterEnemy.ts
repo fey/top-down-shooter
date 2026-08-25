@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { kiteAction } from "../ai/behaviors/combat";
+import { chaseDecision } from "../ai/behaviors/navigation";
 import {
   ENEMY_AGGRO_RANGE,
   SHOOTER_BULLET_SPEED,
@@ -36,10 +37,7 @@ export class ShooterEnemy extends Enemy {
 
   tick(player: Player): void {
     this.faceTarget(player.x, player.y);
-    this.losCache = this.hasLoS(player);
-    if (this.losCache) {
-      this.rememberLastKnown(player.x, player.y);
-    }
+    this.refreshLoS(player);
 
     const dist = Phaser.Math.Distance.Between(this.x, this.y, player.x, player.y);
     const now = this.scene.time.now;
@@ -54,10 +52,23 @@ export class ShooterEnemy extends Enemy {
         break;
 
       case EnemyState.CHASE: {
-        // Идти к игроку по A* (без LoS pathfinding сам обогнёт стену),
-        // пока не выйдем на дистанцию выстрела с прямой видимостью
+        const nav = chaseDecision(this.losCache, this.prevLosCache, this.hasLastKnown);
+        // Агро тревогой ставит CHASE, но точки не даёт — иначе поиск ушёл бы в (0, 0).
+        if (nav.adoptPlayerAsLastKnown) this.rememberLastKnown(player.x, player.y);
+        if (nav.repath) this.invalidatePath();
+
+        if (nav.target === "lastKnown") {
+          // Игрока не видно — дальше ведёт SEARCH: он и есть «идти к последней известной
+          // точке и сдаться по прибытии». Идти на живого игрока здесь нельзя: агро от
+          // выстрела из-за угла дало бы стрелку знание, которого у него нет.
+          this.state = EnemyState.SEARCH;
+          break;
+        }
+
+        // Видимость есть — идти к игроку по A* (pathfinding сам обогнёт стену),
+        // пока не выйдем на дистанцию выстрела
         this.moveAlongPath(new Phaser.Math.Vector2(player.x, player.y), SHOOTER_ENEMY_SPEED);
-        if (dist <= SHOOTER_RANGE && this.losCache) {
+        if (dist <= SHOOTER_RANGE) {
           this.state = EnemyState.SHOOT;
         }
         break;
