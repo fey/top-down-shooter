@@ -16,13 +16,17 @@ import {
 import type { WallDef } from "../types";
 import type { Player } from "./Player";
 
+/**
+ * Состояния автомата поведения. Только те, что кому-то присваиваются: стрейф и уклонение
+ * состояниями не являются — это действия внутри SHOOT (kiteAction, evaluateDodge), и
+ * значение перечисления под них врало бы о модели поведения при чтении AI.
+ */
 export enum EnemyState {
   IDLE = "IDLE",
   PATROL = "PATROL",
   CHASE = "CHASE",
   ATTACK = "ATTACK",
   SHOOT = "SHOOT",
-  STRAFE = "STRAFE",
   SEARCH = "SEARCH",
 }
 
