@@ -1,4 +1,5 @@
 import type { WeaponDef } from "../config";
+import { jitterAngle } from "./accuracy";
 import { computePelletAngles } from "./pellets";
 
 /**
@@ -53,7 +54,7 @@ export class Weapon {
 
     // Неточность разыгрывается один раз на выстрел и уводит ствол ДО раскладки веера:
     // дробь одного патрона летит связным конусом, а не вразброд.
-    const aim = angle + (this.roll() * aimSpreadRad) / 2;
+    const aim = jitterAngle(angle, aimSpreadRad, this.rng() * 2 - 1);
 
     return computePelletAngles(aim, pelletCount, spreadRad).map((pelletAngle) => ({
       x,
@@ -62,13 +63,5 @@ export class Weapon {
       speed: bulletSpeed,
       damage,
     }));
-  }
-
-  /**
-   * Розыгрыш неточности в диапазоне [-1, 1]. Значения за пределами обрезаются, чтобы
-   * кривой генератор не расширял конус за паспортный.
-   */
-  private roll(): number {
-    return Math.max(-1, Math.min(1, this.rng() * 2 - 1));
   }
 }

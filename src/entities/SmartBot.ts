@@ -6,7 +6,7 @@ import {
   ENEMY_BODY_RADIUS,
   PATH_CELL_SIZE,
   SMART_BOT_AGGRO_RANGE,
-  SMART_BOT_AIM_SPREAD,
+  SMART_BOT_AIM_SPREAD_RAD,
   SMART_BOT_COMBAT_RANGE,
   SMART_BOT_DODGE_DURATION,
   SMART_BOT_DODGE_LATERAL_MULT,
@@ -28,6 +28,7 @@ import {
   WEAPONS,
 } from "../config";
 import type { WallDef } from "../types";
+import { jitterAngle } from "../weapons/accuracy";
 import { Weapon } from "../weapons/Weapon";
 import { type Bullet, spawnBullets } from "./Bullet";
 import { Enemy, EnemyState } from "./Enemy";
@@ -202,8 +203,10 @@ export class SmartBot extends Enemy {
     const aimAngle = this.aimAngleAt(player, dist);
     this.setRotation(aimAngle);
     if (now - this.losAcquiredAt >= SMART_BOT_REACTION_MS) {
-      const spread = (Math.random() * 2 - 1) * SMART_BOT_AIM_SPREAD;
-      const shot = this.weapon.tryFire(this.x, this.y, aimAngle + spread, now);
+      // Разброс стрелка считает тот же jitterAngle, что и неточность ствола: одна
+      // единица (полный конус), один кламп. Случайность — здесь, в оболочке.
+      const aimWithSpread = jitterAngle(aimAngle, SMART_BOT_AIM_SPREAD_RAD, Math.random() * 2 - 1);
+      const shot = this.weapon.tryFire(this.x, this.y, aimWithSpread, now);
       spawnBullets(this.enemyBullets, shot);
     }
   }
