@@ -85,6 +85,7 @@ export const WAYPOINT_REACH_DIST = 24;
 export const STUCK_TIME_MS = 350; // мс без движения → враг считается застрявшим
 export const STUCK_MOVE_THRESHOLD = 6; // пикселей — меньше этого = не двигался
 export const WALL_SEPARATION_STRENGTH = 10; // сила отталкивания от стен — меньше значение = плавнее скольжение вдоль стен
+export const PATH_ESCAPE_SPEED_MULT = 1.5; // выход из непроходимой клетки: быстрее обычного, иначе отклик коллизии затолкает обратно
 
 // --- Тайминги (мс) ---
 export const PLAYER_INVINCIBLE_MS = 500; // неуязвимость после получения урона

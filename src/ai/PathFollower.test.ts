@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { PATH_CELL_SIZE, PATH_RECALC_DIST, STUCK_TIME_MS, WAYPOINT_REACH_DIST } from "../config";
+import {
+  PATH_CELL_SIZE,
+  PATH_ESCAPE_SPEED_MULT,
+  PATH_RECALC_DIST,
+  STUCK_TIME_MS,
+  WAYPOINT_REACH_DIST,
+} from "../config";
 import type { Vec2 } from "./grid";
 import { type NavQueries, PathFollower } from "./PathFollower";
 
@@ -95,7 +101,7 @@ describe("PathFollower", () => {
     expect(v.y).toBeCloseTo(0);
   });
 
-  it("из заблокированной клетки выбирается к ближайшей проходимой на 1.5× скорости", () => {
+  it("из заблокированной клетки выбирается к ближайшей проходимой с ускорением", () => {
     // Ускорение нужно, чтобы отклик коллизии не задавил выталкивание обратно в стену.
     const { nav, calls } = navStub({
       isWalkableAt: () => false,
@@ -112,7 +118,7 @@ describe("PathFollower", () => {
       now: 1000,
     });
     expect(v.x).toBeCloseTo(0);
-    expect(v.y).toBeCloseTo(SPEED * 1.5);
+    expect(v.y).toBeCloseTo(SPEED * PATH_ESCAPE_SPEED_MULT);
     expect(calls.findPath, "путь при выходе из стены не строится").toBe(0);
   });
 
@@ -137,6 +143,43 @@ describe("PathFollower", () => {
     // Снова не сдвинулись → стадия 1: полный пересчёт.
     f.follow({ ...req, now: 1000 + 2 * (STUCK_TIME_MS + 50) });
     expect(calls.findPath).toBe(2);
+  });
+
+  it("смена вида цели сбрасывает стадию восстановления, а не только маршрут", () => {
+    // Паритет с прежним invalidatePath(), который сбрасывал stuckRecoveryStage. Иначе
+    // враг, застрявший на прошлой задаче, на свежем маршруте получает сразу пересчёт
+    // вместо пропуска вейпоинта — и теряет более дешёвый шаг восстановления.
+    const { nav, calls, setPath } = navStub();
+    setPath([
+      { x: 300, y: 0 },
+      { x: 600, y: 0 },
+    ]);
+    const f = new PathFollower(nav);
+    const stuck = { x: 0, y: 0, speed: SPEED };
+
+    f.follow({ ...stuck, goal: "patrol", target: { x: 600, y: 0 }, now: 1000 });
+    // Застряли на прошлой задаче → стадия 1.
+    f.follow({
+      ...stuck,
+      goal: "patrol",
+      target: { x: 600, y: 0 },
+      now: 1000 + STUCK_TIME_MS + 50,
+    });
+    expect(calls.findPath, "пропуск вейпоинта, не пересчёт").toBe(1);
+
+    // Сменился вид цели: маршрут строится заново, стадия обязана обнулиться вместе с ним.
+    f.follow({ ...stuck, goal: "player", target: { x: 600, y: 0 }, now: 3000 });
+    expect(calls.findPath).toBe(2);
+
+    // Первое застревание на новой задаче должно дать снова пропуск вейпоинта.
+    f.follow({
+      ...stuck,
+      goal: "player",
+      target: { x: 600, y: 0 },
+      now: 3000 + STUCK_TIME_MS + 50,
+    });
+    expect(calls.findPath, "стадия не обнулилась — сразу пересчёт").toBe(2);
+    expect(f.remainingWaypoints()).toHaveLength(1);
   });
 
   it("последний вейпоинт достигнут — остановка и пустой маршрут", () => {

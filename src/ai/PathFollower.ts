@@ -1,5 +1,6 @@
 import {
   PATH_CELL_SIZE,
+  PATH_ESCAPE_SPEED_MULT,
   PATH_RECALC_DIST,
   STUCK_MOVE_THRESHOLD,
   STUCK_TIME_MS,
@@ -14,6 +15,10 @@ import { wallSeparationForce } from "./separation";
  * Вид цели навигации. Это не «куда», а «что»: смена вида означает, что враг идёт
  * решать другую задачу, и прежний маршрут больше не годится, даже если новая точка
  * оказалась рядом с прошлой.
+ *
+ * Оговорка про цели одного вида: новая точка роуминга или поиска выбирается только по
+ * прибытии к прежней, а прибытие маршрут опустошает — поэтому пересчёт там срабатывает по
+ * «маршрута нет», и отдельная инвалидация им не нужна.
  *
  * Ради этого различения тип и существует. Раньше инвалидацию делал вызывающий —
  * `invalidatePath()` руками при каждой резкой смене цели, девять раз в одном `SmartBot`.
@@ -103,11 +108,18 @@ export class PathFollower {
     if (!this.nav.isWalkableAt(x, y)) {
       const wayOut = this.nav.nearestWalkableWorld(x, y);
       if (wayOut) {
-        return direction(x, y, wayOut.x, wayOut.y, speed * 1.5);
+        return direction(x, y, wayOut.x, wayOut.y, speed * PATH_ESCAPE_SPEED_MULT);
       }
     }
 
-    if (this.needsRepath(req)) {
+    if (this.goal !== req.goal) {
+      // Смена вида цели — ровно то, что прежде делал ручной invalidatePath(): вместе с
+      // маршрутом обнуляется и стадия восстановления. Иначе враг, застрявший на прошлой
+      // задаче, на свежем маршруте получил бы сразу пересчёт вместо пропуска вейпоинта,
+      // то есть потерял бы более дешёвый шаг восстановления.
+      this.stuckStage = 0;
+      this.recalc(req);
+    } else if (this.needsRepath(req)) {
       this.recalc(req);
     }
 
@@ -147,11 +159,11 @@ export class PathFollower {
   }
 
   /**
-   * Пересчёт нужен в трёх случаях: сменился вид цели, цель ушла дальше
-   * `PATH_RECALC_DIST` или маршрута нет вовсе (первый вызов либо пройден до конца).
+   * Пересчёт при том же виде цели: маршрута нет вовсе (первый вызов либо пройден до
+   * конца) или цель ушла дальше `PATH_RECALC_DIST`. Смену вида цели разбирает `follow`
+   * отдельно — она весомее и обнуляет заодно стадию восстановления.
    */
   private needsRepath(req: FollowRequest): boolean {
-    if (this.goal !== req.goal) return true;
     if (this.waypoints.length === 0) return true;
     const to = this.pathedTo;
     if (!to) return true;
