@@ -16,7 +16,7 @@ import { type Enemy, EnemyState } from "../entities/Enemy";
 import type { Player } from "../entities/Player";
 import type { WeaponPickup } from "../entities/WeaponPickup";
 import { loadTiledLevel } from "../level/LevelLoader";
-import type { LevelConfig } from "../level/levels";
+import { DEFAULT_LEVEL, type LevelConfig } from "../level/levels";
 import { GAME_OVER_SCENE_KEY } from "./GameOverScene";
 import { HUD_SCENE_KEY, type HudInitData } from "./HUDScene";
 import { LEVEL_SELECT_SCENE_KEY } from "./LevelSelectScene";
@@ -48,14 +48,14 @@ export class GameScene extends Phaser.Scene {
   private gameOver = false;
   private levelHadEnemies = false; // уровень стартовал с врагами → у него есть условие победы
   private enemiesAlive = 0;
-  private levelConfig: LevelConfig = { key: "level1-map" };
+  private levelConfig: LevelConfig = DEFAULT_LEVEL;
 
   constructor() {
     super(GAME_SCENE_KEY);
   }
 
   init(data: { level?: LevelConfig }): void {
-    this.levelConfig = data.level ?? { key: "level1-map" };
+    this.levelConfig = data.level ?? DEFAULT_LEVEL;
     this.gameOver = false;
     this.levelHadEnemies = false;
     this.enemiesAlive = 0;
