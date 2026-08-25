@@ -11,6 +11,7 @@ import {
   WEAPONS,
   type WeaponDef,
 } from "../config";
+import { emitGameEvent, HP_CHANGED, PLAYER_DIED, WEAPON_CHANGED } from "../events";
 import { Weapon } from "../weapons/Weapon";
 import { spawnBullets } from "./Bullet";
 
@@ -62,7 +63,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.weapon = new Weapon(def);
     this.setTexture(playerTextureKey(def));
     this.syncBody();
-    this.scene.events.emit("weaponChanged", def.name);
+    emitGameEvent(this.scene.events, WEAPON_CHANGED, def.name);
   }
 
   /**
@@ -81,7 +82,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.invincibleUntil = now + PLAYER_INVINCIBLE_MS;
 
     this.hp -= amount;
-    this.scene.events.emit("hpChanged", this.hp);
+    emitGameEvent(this.scene.events, HP_CHANGED, this.hp);
 
     this.setTint(COLOR_PLAYER_HIT_TINT);
     this.scene.time.delayedCall(PLAYER_HIT_FLASH_MS, () => {
@@ -90,7 +91,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     if (this.hp <= 0) {
       this.setActive(false).setVisible(false);
-      this.scene.events.emit("playerDied");
+      emitGameEvent(this.scene.events, PLAYER_DIED);
     }
   }
 

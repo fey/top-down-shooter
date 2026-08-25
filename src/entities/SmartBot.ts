@@ -27,6 +27,7 @@ import {
   WAYPOINT_REACH_DIST,
   WEAPONS,
 } from "../config";
+import { emitGameEvent, PACK_ALERT } from "../events";
 import type { WallDef } from "../types";
 import { jitterAngle } from "../weapons/accuracy";
 import { Weapon } from "../weapons/Weapon";
@@ -129,7 +130,7 @@ export class SmartBot extends Enemy {
           this.hasPatrolTarget = false;
           this.invalidatePath();
           this.state = EnemyState.CHASE;
-          this.scene.events.emit("packAlert", this.x, this.y);
+          emitGameEvent(this.scene.events, PACK_ALERT, this.x, this.y);
           break;
         }
         this.patrol();

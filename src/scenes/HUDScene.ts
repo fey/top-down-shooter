@@ -7,6 +7,7 @@ import {
   HUD_MARGIN,
   HUD_WEAPON_FONT_PX,
 } from "../config";
+import { ENEMIES_CHANGED, HP_CHANGED, offGameEvent, onGameEvent, WEAPON_CHANGED } from "../events";
 import { formatEnemiesLeft, formatHp, hpColor } from "../ui/hud";
 
 export const HUD_SCENE_KEY = "HUD";
@@ -75,16 +76,16 @@ export class HUDScene extends Phaser.Scene {
     const onWeapon = (name: string) => this.weaponText.setText(name);
     const onEnemies = (count: number) => this.enemiesText.setText(formatEnemiesLeft(count));
 
-    src.on("hpChanged", onHp);
-    src.on("weaponChanged", onWeapon);
-    src.on("enemiesChanged", onEnemies);
+    onGameEvent(src, HP_CHANGED, onHp);
+    onGameEvent(src, WEAPON_CHANGED, onWeapon);
+    onGameEvent(src, ENEMIES_CHANGED, onEnemies);
 
     // Эмиттер принадлежит GameScene и переживает её рестарт — подписки надо снимать
     // самим, иначе после перезапуска боя обработчики стреляют в уничтоженные надписи.
     this.events.once("shutdown", () => {
-      src.off("hpChanged", onHp);
-      src.off("weaponChanged", onWeapon);
-      src.off("enemiesChanged", onEnemies);
+      offGameEvent(src, HP_CHANGED, onHp);
+      offGameEvent(src, WEAPON_CHANGED, onWeapon);
+      offGameEvent(src, ENEMIES_CHANGED, onEnemies);
     });
   }
 

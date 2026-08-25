@@ -15,6 +15,15 @@ import { Bullet } from "../entities/Bullet";
 import { type Enemy, EnemyState } from "../entities/Enemy";
 import type { Player } from "../entities/Player";
 import type { WeaponPickup } from "../entities/WeaponPickup";
+import {
+  ENEMIES_CHANGED,
+  emitGameEvent,
+  offGameEvent,
+  onceGameEvent,
+  onGameEvent,
+  PACK_ALERT,
+  PLAYER_DIED,
+} from "../events";
 import { loadTiledLevel } from "../level/LevelLoader";
 import { DEFAULT_LEVEL, type LevelConfig } from "../level/levels";
 import { GAME_OVER_SCENE_KEY } from "./GameOverScene";
@@ -106,7 +115,7 @@ export class GameScene extends Phaser.Scene {
         }
       }
     };
-    this.events.on("packAlert", onPackAlert);
+    onGameEvent(this.events, PACK_ALERT, onPackAlert);
 
     this.cameras.main.startFollow(this.player);
     this.cameras.main.setBounds(0, 0, level.mapW, level.mapH);
@@ -115,7 +124,7 @@ export class GameScene extends Phaser.Scene {
       this.gameOver = true;
       this.scene.start(GAME_OVER_SCENE_KEY, { win: false, level: this.levelConfig });
     };
-    this.events.once("playerDied", onPlayerDied);
+    onceGameEvent(this.events, PLAYER_DIED, onPlayerDied);
 
     this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.ESC).once("down", () => {
       this.scene.start(LEVEL_SELECT_SCENE_KEY);
@@ -143,8 +152,8 @@ export class GameScene extends Phaser.Scene {
 
     this.events.once("shutdown", () => {
       this.scene.stop(HUD_SCENE_KEY);
-      this.events.off("packAlert", onPackAlert);
-      this.events.off("playerDied", onPlayerDied);
+      offGameEvent(this.events, PACK_ALERT, onPackAlert);
+      offGameEvent(this.events, PLAYER_DIED, onPlayerDied);
     });
 
     // Дебаг-оверлей — инструмент разработки: в продакшн-сборке его нет вовсе
@@ -253,7 +262,7 @@ export class GameScene extends Phaser.Scene {
     const alive = this.enemyGroup.countActive(true);
     if (alive !== this.enemiesAlive) {
       this.enemiesAlive = alive;
-      this.events.emit("enemiesChanged", alive);
+      emitGameEvent(this.events, ENEMIES_CHANGED, alive);
     }
 
     if (this.levelHadEnemies && alive === 0) {

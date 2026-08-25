@@ -10,6 +10,7 @@ import {
   MELEE_SEARCH_TIMEOUT,
   WAYPOINT_REACH_DIST,
 } from "../config";
+import { emitGameEvent, PACK_ALERT } from "../events";
 import type { WallDef } from "../types";
 import { Enemy, EnemyState } from "./Enemy";
 import type { Player } from "./Player";
@@ -34,7 +35,7 @@ export class MeleeEnemy extends Enemy {
         this.setVelocity(0, 0);
         if (dist < ENEMY_AGGRO_RANGE && this.losCache) {
           this.state = EnemyState.CHASE;
-          this.scene.events.emit("packAlert", this.x, this.y);
+          emitGameEvent(this.scene.events, PACK_ALERT, this.x, this.y);
         }
         break;
 
