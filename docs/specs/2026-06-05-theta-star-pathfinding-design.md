@@ -59,8 +59,19 @@ A\*: при раскрытии соседа проверяется grid-LoS от
 
 ### Что НЕ меняется
 
-- Интерфейс `findPath(fromX, fromY, toX, toY): Vector2[]` и контракт
-  с `Enemy.moveAlongPath` (включая stuck-recovery и wall separation).
+- Интерфейс `findPath(fromX, fromY, toX, toY): Vector2[]`, а также
+  stuck-recovery и wall separation как таковые.
+
+> Обновление 2026-08-26 (top-down-shooter-4d2): `Enemy.moveAlongPath`
+> больше нет. Следование по маршруту — `ai/PathFollower.ts`, по экземпляру
+> на врага, композицией вместо protected-полей базы; stuck-recovery, выход
+> из непроходимой клетки, wall separation и сравнение с `PATH_RECALC_DIST`
+> переехали внутрь него без изменения поведения. Пересчёт пути теперь
+> инициирует и смена **вида** цели (`NavGoal`), а не только её смещение —
+> прежде это делал ручной `invalidatePath()` на стороне вызывающего.
+> Трим старта остался в `grid.ts`: сам поиск переехал туда раньше, и этот
+> документ, адресующий `Pathfinder.ts`, в той части разошёлся с кодом
+> (см. top-down-shooter-b4h).
 - Сетка 64×64, `MeleeEnemy`/`ShooterEnemy`.
 
 > Обновление 2026-06-05: инфляция стен на 32 px убрана — для выровненных

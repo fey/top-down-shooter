@@ -127,7 +127,6 @@ export class SmartBot extends Enemy {
       case EnemyState.PATROL: {
         if (dist < SMART_BOT_AGGRO_RANGE && this.losCache) {
           this.hasPatrolTarget = false;
-          this.invalidatePath();
           this.state = EnemyState.CHASE;
           emitGameEvent(this.scene.events, PACK_ALERT, this.x, this.y);
           break;
@@ -146,7 +145,7 @@ export class SmartBot extends Enemy {
           this.state = EnemyState.SHOOT;
           break;
         }
-        this.moveAlongPath(new Phaser.Math.Vector2(player.x, player.y), SMART_BOT_SPEED);
+        this.navigateTo("player", player, SMART_BOT_SPEED);
         break;
       }
 
@@ -165,7 +164,6 @@ export class SmartBot extends Enemy {
 
       case EnemyState.SEARCH: {
         if (this.losCache) {
-          this.invalidatePath();
           this.state = dist <= SMART_BOT_COMBAT_RANGE ? EnemyState.SHOOT : EnemyState.CHASE;
           break;
         }
@@ -191,7 +189,7 @@ export class SmartBot extends Enemy {
           this.retreatFrom(player, SMART_BOT_SPEED);
           break;
         case "advance":
-          this.moveAlongPath(new Phaser.Math.Vector2(player.x, player.y), SMART_BOT_SPEED);
+          this.navigateTo("player", player, SMART_BOT_SPEED);
           break;
         case "strafe":
           this.applyStrafe(player, SMART_BOT_SPEED, SMART_BOT_STRAFE_FLIP_MS, now);
@@ -255,7 +253,6 @@ export class SmartBot extends Enemy {
 
   /** Переход в поиск после потери LoS: идём к lastKnownPos, район ещё не обыскиваем. */
   private enterSearch(): void {
-    this.invalidatePath();
     this.searchUntil = 0; // обыск района взведём по прибытии в lastKnownPos
     this.hasSearchTarget = false;
     this.state = EnemyState.SEARCH;
@@ -271,10 +268,9 @@ export class SmartBot extends Enemy {
       }
       this.patrolTarget.copy(t);
       this.hasPatrolTarget = true;
-      this.invalidatePath();
     }
     this.faceTarget(this.patrolTarget.x, this.patrolTarget.y);
-    this.moveAlongPath(this.patrolTarget, SMART_BOT_SPEED);
+    this.navigateTo("patrol", this.patrolTarget, SMART_BOT_SPEED);
     if (Phaser.Math.Distance.BetweenPoints(this, this.patrolTarget) < WAYPOINT_REACH_DIST) {
       this.hasPatrolTarget = false; // выберем новую точку на следующем тике
     }
@@ -288,11 +284,10 @@ export class SmartBot extends Enemy {
     // Фаза 1: идём к последней увиденной позиции.
     if (this.searchUntil === 0) {
       this.faceTarget(this.lastKnownPos.x, this.lastKnownPos.y);
-      this.moveAlongPath(this.lastKnownPos, SMART_BOT_SPEED);
+      this.navigateTo("lastKnown", this.lastKnownPos, SMART_BOT_SPEED);
       if (Phaser.Math.Distance.BetweenPoints(this, this.lastKnownPos) < WAYPOINT_REACH_DIST) {
         this.searchUntil = now + SMART_BOT_SEARCH_DURATION; // начать обыск района
         this.hasSearchTarget = false;
-        this.invalidatePath();
       }
       return;
     }
@@ -301,7 +296,6 @@ export class SmartBot extends Enemy {
       this.searchUntil = 0;
       this.hasSearchTarget = false;
       this.hasPatrolTarget = false;
-      this.invalidatePath();
       this.state = EnemyState.PATROL;
       return;
     }
@@ -316,12 +310,11 @@ export class SmartBot extends Enemy {
       if (t) {
         this.searchTarget.copy(t);
         this.hasSearchTarget = true;
-        this.invalidatePath();
       }
     }
     if (this.hasSearchTarget) {
       this.faceTarget(this.searchTarget.x, this.searchTarget.y);
-      this.moveAlongPath(this.searchTarget, SMART_BOT_SPEED);
+      this.navigateTo("search", this.searchTarget, SMART_BOT_SPEED);
       if (Phaser.Math.Distance.BetweenPoints(this, this.searchTarget) < WAYPOINT_REACH_DIST) {
         this.hasSearchTarget = false;
       }
@@ -357,7 +350,6 @@ export class SmartBot extends Enemy {
     this.coverTarget.copy(cover);
     this.hasCover = true;
     this.retreatUntil = now + SMART_BOT_RETREAT_MS;
-    this.invalidatePath();
   }
 
   private runRetreat(player: Player, now: number): void {
@@ -371,7 +363,7 @@ export class SmartBot extends Enemy {
       return;
     }
     if (this.hasCover) {
-      this.moveAlongPath(this.coverTarget, SMART_BOT_SPEED);
+      this.navigateTo("cover", this.coverTarget, SMART_BOT_SPEED);
     }
   }
 
@@ -379,7 +371,6 @@ export class SmartBot extends Enemy {
     this.retreatUntil = 0;
     this.hasCover = false;
     this.retreatCooldownUntil = now + SMART_BOT_RETREAT_COOLDOWN_MS;
-    this.invalidatePath();
     this.setVelocity(0, 0);
     this.state = EnemyState.CHASE; // снова в бой (лечения нет — прятаться вечно нельзя)
   }

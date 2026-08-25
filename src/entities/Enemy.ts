@@ -1,18 +1,11 @@
 import Phaser from "phaser";
-import { stuckDecision } from "../ai/behaviors/navigation";
+import { type ChaseNavTarget, chaseDecision } from "../ai/behaviors/navigation";
 import { anyWallBlocks } from "../ai/geometry";
+import type { Vec2 } from "../ai/grid";
+import type { NavGoal } from "../ai/PathFollower";
+import { PathFollower } from "../ai/PathFollower";
 import type { Pathfinder } from "../ai/Pathfinder";
-import { wallSeparationForce } from "../ai/separation";
-import {
-  ENEMY_BODY_RADIUS,
-  ENEMY_SPRITE_SCALE,
-  PATH_CELL_SIZE,
-  PATH_RECALC_DIST,
-  STUCK_MOVE_THRESHOLD,
-  STUCK_TIME_MS,
-  WALL_SEPARATION_STRENGTH,
-  WAYPOINT_REACH_DIST,
-} from "../config";
+import { ENEMY_BODY_RADIUS, ENEMY_SPRITE_SCALE } from "../config";
 import type { WallDef } from "../types";
 import type { Player } from "./Player";
 
@@ -48,18 +41,11 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
   protected strafeSign = 1;
   protected strafeFlipTime = 0;
 
-  private waypoints: Phaser.Math.Vector2[] = [];
-  private waypointIndex = 0;
-  private readonly lastPathTarget = new Phaser.Math.Vector2();
-  private hasPathTarget = false;
-
-  // Stuck detection state
-  private readonly stuckCheckPos = new Phaser.Math.Vector2();
-  private stuckCheckTime = 0;
-  private stuckRecoveryStage = 0; // 0=normal, 1=waypoint-skip tried
-
-  // Wall separation force accumulator (reused each frame to avoid allocation)
-  private readonly wallForceAccum = new Phaser.Math.Vector2();
+  /**
+   * Следование по маршруту — отдельный владелец состояния, а не protected-поля базы.
+   * null до setPathfinder: без карты враг идёт к цели напрямую.
+   */
+  private follower: PathFollower | null = null;
 
   constructor(scene: Phaser.Scene, x: number, y: number, texture: string, hp: number) {
     super(scene, x, y, texture);
@@ -73,6 +59,7 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
 
   setPathfinder(pf: Pathfinder): void {
     this.pathfinder = pf;
+    this.follower = new PathFollower(pf);
   }
 
   setWalls(walls: WallDef[]): void {
@@ -102,27 +89,13 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
     return this.losCache;
   }
 
-  /** Оставшиеся вейпоинты (с текущего waypointIndex) — для debug-оверлея. */
-  getRemainingWaypoints(): Phaser.Math.Vector2[] {
-    return this.waypoints.slice(this.waypointIndex);
+  /** Оставшиеся вейпоинты — для debug-оверлея. */
+  getRemainingWaypoints(): Vec2[] {
+    return this.follower?.remainingWaypoints() ?? [];
   }
 
-  getLastPathTarget(): Phaser.Math.Vector2 | null {
-    return this.hasPathTarget ? this.lastPathTarget : null;
-  }
-
-  /**
-   * Invalidates the cached path so the next moveAlongPath call
-   * unconditionally recalculates. Use when the navigation target changes
-   * abruptly (e.g., switching from the player to lastKnownPos on LoS loss).
-   */
-  invalidatePath(): void {
-    this.hasPathTarget = false;
-    this.waypoints = [];
-    this.waypointIndex = 0;
-    this.stuckCheckTime = 0;
-    this.stuckRecoveryStage = 0;
-    this.stuckCheckPos.set(this.x, this.y);
+  getLastPathTarget(): Vec2 | null {
+    return this.follower?.pathTarget() ?? null;
   }
 
   /**
@@ -141,7 +114,9 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
       this.state === EnemyState.SEARCH;
     if (!unaware) return;
     this.rememberLastKnown(sourceX, sourceY);
-    this.invalidatePath();
+    // Цель прыгнула, не меняя вида: последняя известная позиция переехала в точку
+    // выстрела. Смену вида follower ловит сам, а такой прыжок — нет.
+    this.follower?.reset();
     this.state = EnemyState.CHASE;
   }
 
@@ -183,104 +158,38 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.setVelocity(Math.cos(perp) * speed, Math.sin(perp) * speed);
   }
 
-  moveAlongPath(target: Phaser.Math.Vector2, speed: number): void {
-    // Escape if physically inside a blocked grid cell (e.g. pushed into wall by physics)
-    if (this.pathfinder && !this.pathfinder.isWalkableAt(this.x, this.y)) {
-      const escapeTarget = this.pathfinder.nearestWalkableWorld(this.x, this.y);
-      if (escapeTarget) {
-        const angle = Phaser.Math.Angle.Between(this.x, this.y, escapeTarget.x, escapeTarget.y);
-        // 1.5× speed so escape force overcomes collision response pushing us back
-        this.setVelocity(Math.cos(angle) * speed * 1.5, Math.sin(angle) * speed * 1.5);
-        return;
-      }
-    }
-
-    const targetMoved =
-      Phaser.Math.Distance.BetweenPoints(target, this.lastPathTarget) > PATH_RECALC_DIST;
-
-    if (targetMoved || this.waypoints.length === 0) {
-      this.recalcPath(target);
-    }
-
-    if (this.waypoints.length === 0) {
-      // No path found — fall back to direct movement
+  /**
+   * Идти к цели: снимок в follower, скорость — на тело. Вид цели (`goal`) важнее её
+   * координат — по его смене follower сам пересчитывает маршрут, поэтому наследникам
+   * больше не нужно помнить про инвалидацию пути.
+   */
+  protected navigateTo(goal: NavGoal, target: Vec2, speed: number): void {
+    if (!this.follower) {
+      // Карты нет (враг создан без pathfinder) — идём напрямую.
       const angle = Phaser.Math.Angle.Between(this.x, this.y, target.x, target.y);
       this.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
       return;
     }
-
-    // Stuck detection: if enemy hasn't moved STUCK_MOVE_THRESHOLD px in STUCK_TIME_MS ms
-    // while following a path, skip current waypoint or force a repath.
-    const now = this.scene.time.now;
-    if (this.stuckCheckTime === 0) {
-      this.stuckCheckPos.set(this.x, this.y);
-      this.stuckCheckTime = now;
-    } else if (now - this.stuckCheckTime > STUCK_TIME_MS) {
-      const moved = Phaser.Math.Distance.BetweenPoints(this, this.stuckCheckPos);
-      const { action, nextStage } = stuckDecision(
-        moved,
-        this.stuckRecoveryStage,
-        STUCK_MOVE_THRESHOLD,
-      );
-      this.stuckRecoveryStage = nextStage;
-      if (action === "skip") {
-        // skip current waypoint and try the next one
-        this.waypointIndex = Math.min(this.waypointIndex + 1, this.waypoints.length - 1);
-      } else if (action === "repath") {
-        // force a full repath from current position
-        this.recalcPath(target);
-      }
-      this.stuckCheckPos.set(this.x, this.y);
-      this.stuckCheckTime = now;
-    }
-
-    const wp = this.waypoints[this.waypointIndex];
-    if (wp && Phaser.Math.Distance.Between(this.x, this.y, wp.x, wp.y) < WAYPOINT_REACH_DIST) {
-      this.waypointIndex++;
-      if (this.waypointIndex >= this.waypoints.length) {
-        this.waypoints = [];
-        this.stuckCheckTime = 0; // reset so detection restarts on next path
-        this.setVelocity(0, 0);
-        return;
-      }
-    }
-
-    const current = this.waypoints[this.waypointIndex];
-    if (!current) return;
-    const angle = Phaser.Math.Angle.Between(this.x, this.y, current.x, current.y);
-    const wallForce = this.getWallSeparationForce();
-    this.setVelocity(Math.cos(angle) * speed + wallForce.x, Math.sin(angle) * speed + wallForce.y);
+    const v = this.follower.follow({
+      x: this.x,
+      y: this.y,
+      goal,
+      target,
+      speed,
+      now: this.scene.time.now,
+    });
+    this.setVelocity(v.x, v.y);
   }
 
   /**
-   * Samples 8 directions at PATH_CELL_SIZE distance and returns a repulsion
-   * force pushing the enemy away from nearby blocked grid cells.
-   * Weight = 1/distance (linear, not squared — keeps the force gentle).
+   * Куда идти в CHASE. Решение чистое (`chaseDecision`), здесь только применение той
+   * его части, которая трогает состояние врага: подмена пустой последней известной
+   * позиции. Само движение оставлено наследнику — у melee и стрелка оно разное.
    */
-  private getWallSeparationForce(): Phaser.Math.Vector2 {
-    if (!this.pathfinder) return this.wallForceAccum.set(0, 0);
-    const pf = this.pathfinder;
-    const force = wallSeparationForce(
-      this.x,
-      this.y,
-      PATH_CELL_SIZE,
-      PATH_CELL_SIZE,
-      WALL_SEPARATION_STRENGTH,
-      (col, row) => pf.isWalkable(col, row),
-    );
-    return this.wallForceAccum.set(force.x, force.y);
-  }
-
-  private recalcPath(target: Phaser.Math.Vector2): void {
-    this.lastPathTarget.copy(target);
-    this.hasPathTarget = true;
-    this.waypointIndex = 0;
-    this.stuckCheckTime = 0; // reset stuck detection for the new path
-    if (this.pathfinder) {
-      this.waypoints = this.pathfinder.findPath(this.x, this.y, target.x, target.y);
-    } else {
-      this.waypoints = [];
-    }
+  protected chaseTarget(player: Player): ChaseNavTarget {
+    const nav = chaseDecision({ hasLos: this.losCache, hasLastKnown: this.hasLastKnown });
+    if (nav.adoptPlayerAsLastKnown) this.rememberLastKnown(player.x, player.y);
+    return nav.target;
   }
 
   abstract tick(player: Player): void;

@@ -1,5 +1,4 @@
 import Phaser from "phaser";
-import { chaseDecision } from "../ai/behaviors/navigation";
 import {
   ENEMY_AGGRO_RANGE,
   MELEE_ATTACK_RANGE,
@@ -40,15 +39,11 @@ export class MeleeEnemy extends Enemy {
         break;
 
       case EnemyState.CHASE: {
-        const nav = chaseDecision(this.losCache, this.prevLosCache, this.hasLastKnown);
-        if (nav.adoptPlayerAsLastKnown) this.rememberLastKnown(player.x, player.y);
-        if (nav.repath) this.invalidatePath();
-
-        if (nav.target === "player") {
-          this.moveAlongPath(new Phaser.Math.Vector2(player.x, player.y), MELEE_ENEMY_SPEED);
+        if (this.chaseTarget(player) === "player") {
+          this.navigateTo("player", player, MELEE_ENEMY_SPEED);
           if (dist < MELEE_ATTACK_RANGE) this.state = EnemyState.ATTACK;
         } else {
-          this.moveAlongPath(this.lastKnownPos, MELEE_ENEMY_SPEED);
+          this.navigateTo("lastKnown", this.lastKnownPos, MELEE_ENEMY_SPEED);
           // Переходим в SEARCH только когда физически добрались до lastKnownPos
           const distToLkp = Phaser.Math.Distance.BetweenPoints(this, this.lastKnownPos);
           if (distToLkp < WAYPOINT_REACH_DIST) {

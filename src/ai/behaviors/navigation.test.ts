@@ -24,33 +24,26 @@ describe("stuckDecision", () => {
 
 describe("chaseDecision", () => {
   it("есть видимость — идём на самого игрока", () => {
-    expect(chaseDecision(true, true, true)).toEqual({
+    expect(chaseDecision({ hasLos: true, hasLastKnown: true })).toEqual({
       target: "player",
       adoptPlayerAsLastKnown: false,
-      repath: false,
     });
   });
 
   it("нет видимости — идём к последней известной точке, а не к игроку", () => {
     // Контракт агро от стрельбы: враг знает направление выстрела, но не позицию стрелка.
-    expect(chaseDecision(false, false, true).target).toBe("lastKnown");
-  });
-
-  it("видимость только что потеряна — путь сбрасывается", () => {
-    // Иначе враг доедет по старому маршруту до места, где игрока уже нет.
-    expect(chaseDecision(false, true, true).repath).toBe(true);
-    expect(chaseDecision(false, false, true).repath).toBe(false);
+    expect(chaseDecision({ hasLos: false, hasLastKnown: true }).target).toBe("lastKnown");
   });
 
   it("агро без видимости и без запомненной точки — взять текущую позицию игрока", () => {
     // Так поднимает тревога (packAlert): состояние CHASE есть, lastKnownPos пуст —
     // без подмены враг пошёл бы навигироваться в (0, 0).
-    const d = chaseDecision(false, false, false);
+    const d = chaseDecision({ hasLos: false, hasLastKnown: false });
     expect(d.adoptPlayerAsLastKnown).toBe(true);
     expect(d.target).toBe("lastKnown");
   });
 
   it("при видимости запомненная точка не нужна и не подменяется", () => {
-    expect(chaseDecision(true, false, false).adoptPlayerAsLastKnown).toBe(false);
+    expect(chaseDecision({ hasLos: true, hasLastKnown: false }).adoptPlayerAsLastKnown).toBe(false);
   });
 });

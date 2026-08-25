@@ -1,6 +1,5 @@
 import Phaser from "phaser";
 import { kiteAction } from "../ai/behaviors/combat";
-import { chaseDecision } from "../ai/behaviors/navigation";
 import {
   ENEMY_AGGRO_RANGE,
   SHOOTER_BULLET_SPEED,
@@ -53,12 +52,9 @@ export class ShooterEnemy extends Enemy {
         break;
 
       case EnemyState.CHASE: {
-        const nav = chaseDecision(this.losCache, this.prevLosCache, this.hasLastKnown);
-        // Агро тревогой ставит CHASE, но точки не даёт — иначе поиск ушёл бы в (0, 0).
-        if (nav.adoptPlayerAsLastKnown) this.rememberLastKnown(player.x, player.y);
-        if (nav.repath) this.invalidatePath();
-
-        if (nav.target === "lastKnown") {
+        // chaseTarget заодно закрывает агро тревогой: packAlert ставит CHASE, но точки
+        // не даёт, и без подмены поиск ушёл бы в (0, 0).
+        if (this.chaseTarget(player) === "lastKnown") {
           // Игрока не видно — дальше ведёт SEARCH: он и есть «идти к последней известной
           // точке и сдаться по прибытии». Идти на живого игрока здесь нельзя: агро от
           // выстрела из-за угла дало бы стрелку знание, которого у него нет.
@@ -66,9 +62,9 @@ export class ShooterEnemy extends Enemy {
           break;
         }
 
-        // Видимость есть — идти к игроку по A* (pathfinding сам обогнёт стену),
+        // Видимость есть — идти к игроку по маршруту (он сам обогнёт стену),
         // пока не выйдем на дистанцию выстрела
-        this.moveAlongPath(new Phaser.Math.Vector2(player.x, player.y), SHOOTER_ENEMY_SPEED);
+        this.navigateTo("player", player, SHOOTER_ENEMY_SPEED);
         if (dist <= SHOOTER_RANGE) {
           this.state = EnemyState.SHOOT;
         }
@@ -88,8 +84,8 @@ export class ShooterEnemy extends Enemy {
             this.retreatFrom(player, SHOOTER_ENEMY_SPEED);
             break;
           case "advance":
-            // игрок слишком далеко — сблизиться через pathfinding (обходит стены)
-            this.moveAlongPath(new Phaser.Math.Vector2(player.x, player.y), SHOOTER_ENEMY_SPEED);
+            // игрок слишком далеко — сблизиться по маршруту (обходит стены)
+            this.navigateTo("player", player, SHOOTER_ENEMY_SPEED);
             break;
           case "strafe":
             // непрерывное боковое движение
@@ -110,7 +106,7 @@ export class ShooterEnemy extends Enemy {
           this.state = EnemyState.CHASE;
           break;
         }
-        this.moveAlongPath(this.lastKnownPos, SHOOTER_ENEMY_SPEED);
+        this.navigateTo("lastKnown", this.lastKnownPos, SHOOTER_ENEMY_SPEED);
         const distToLkp = Phaser.Math.Distance.BetweenPoints(this, this.lastKnownPos);
         if (distToLkp < WAYPOINT_REACH_DIST) {
           this.setVelocity(0, 0);

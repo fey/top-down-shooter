@@ -26,12 +26,18 @@ export function stuckDecision(moved: number, stage: number, moveThreshold: numbe
 /** Куда навигироваться в CHASE: на самого игрока или на последнюю известную точку. */
 export type ChaseNavTarget = "player" | "lastKnown";
 
+/** Снимок восприятия, которого достаточно для выбора цели преследования. */
+export interface ChaseSnapshot {
+  /** Виден ли игрок прямо сейчас. */
+  hasLos: boolean;
+  /** Заполнена ли последняя известная позиция игрока. */
+  hasLastKnown: boolean;
+}
+
 export interface ChaseDecision {
   target: ChaseNavTarget;
-  /** lastKnownPos не заполнен — оболочка должна взять туда текущую позицию игрока. */
+  /** lastKnownPos пуст — оболочка должна взять туда текущую позицию игрока. */
   adoptPlayerAsLastKnown: boolean;
-  /** Сбросить кэш пути: цель сменилась скачком, старый маршрут ведёт не туда. */
-  repath: boolean;
 }
 
 /**
@@ -42,21 +48,13 @@ export interface ChaseDecision {
  * игроку. Иначе агро от выстрела из-за угла выдавало бы врагу знание, которого у него нет
  * (см. docs/spec.md, «Агро от стрельбы»).
  *
- * `hadLos` — видимость на прошлом тике: путь пересчитывается именно на потере видимости,
- * а не на каждом тике без неё, иначе маршрут строился бы заново каждый кадр.
- *
  * `hasLastKnown` ложно, когда агро пришло тревогой (`packAlert` ставит CHASE, но точки не
  * даёт) — тогда точкой становится текущая позиция игрока, иначе враг пошёл бы в (0, 0).
+ *
+ * Пересчёта пути здесь нет намеренно: маршрут инвалидирует `PathFollower` по смене вида
+ * цели, а вид меняется ровно на том же фронте видимости.
  */
-export function chaseDecision(
-  hasLos: boolean,
-  hadLos: boolean,
-  hasLastKnown: boolean,
-): ChaseDecision {
-  if (hasLos) return { target: "player", adoptPlayerAsLastKnown: false, repath: false };
-  return {
-    target: "lastKnown",
-    adoptPlayerAsLastKnown: !hasLastKnown,
-    repath: hadLos,
-  };
+export function chaseDecision(snapshot: ChaseSnapshot): ChaseDecision {
+  if (snapshot.hasLos) return { target: "player", adoptPlayerAsLastKnown: false };
+  return { target: "lastKnown", adoptPlayerAsLastKnown: !snapshot.hasLastKnown };
 }
