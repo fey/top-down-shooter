@@ -51,7 +51,7 @@ Phaser 3), TypeScript 7 (нативная реализация компилят�
 - **Две группы пуль** (`playerBullets`, `enemyBullets`) — разделение делает правила коллизий
   однозначными.
 - **События `GameScene`:** `hpChanged`, `weaponChanged`, `enemiesChanged`, `playerDied`,
-  `enemyDied`, `packAlert`.
+  `packAlert`. Смерть врага события не даёт — число живых сцена опрашивает сама.
 
 ## Соглашения и паттерны
 

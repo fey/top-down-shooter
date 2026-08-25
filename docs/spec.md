@@ -295,7 +295,12 @@ Sprite + Arcade Physics body. Управление: WASD (нормализова
 - Тик AI каждого врага вызывается в `update()`.
 - Тревогу разносит подписка `GameScene` на событие `packAlert`: враг эмитит свои координаты, сцена переводит соседей в `CHASE`.
 - При 0 живых врагов → GameOver (WIN). При смерти игрока → GameOver (LOSE). В GameOver уходит и конфиг уровня — для кнопки «Заново».
-- События `scene.events`, на которые подписываются оверлеи: `hpChanged` (эмитит `Player.takeDamage`), `weaponChanged` (`Player.equip`, отдаёт имя оружия), `enemiesChanged` (`GameScene.update`, только при изменении числа живых), `playerDied`, `enemyDied`, `packAlert`.
+- События `scene.events`, на которые подписываются оверлеи: `hpChanged` (эмитит `Player.takeDamage`), `weaponChanged` (`Player.equip`, отдаёт имя оружия), `enemiesChanged` (`GameScene.update`, только при изменении числа живых), `playerDied`, `packAlert`.
+- Смерть врага события не даёт: число живых считает `GameScene.update` через
+  `enemyGroup.countActive(true)`. Опрос выбран сознательно — он ловит любое исчезновение
+  врага из группы, а не только смерть от урона, и не запускает переход в GameOver из
+  колбэка физического overlap'а. Событие `enemyDied` тут было, но подписчиков не имело
+  и уехало (top-down-shooter-dqx).
 
 ## Баланс (`src/config.ts`)
 

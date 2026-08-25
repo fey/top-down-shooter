@@ -148,7 +148,6 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
   takeDamage(amount: number): void {
     this.hp -= amount;
     if (this.hp <= 0) {
-      this.scene.events.emit("enemyDied", this);
       this.destroy();
     }
   }
