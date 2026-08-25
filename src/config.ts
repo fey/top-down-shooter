@@ -58,7 +58,7 @@ export const SMART_BOT_KITE_RETREAT_DIST = 220; // ближе — отступа
 export const SMART_BOT_KITE_ADVANCE_DIST = 320; // дальше — сближаться через pathfinding
 export const SMART_BOT_REACTION_MS = 180; // задержка реакции перед открытием огня (честность)
 export const SMART_BOT_LOS_GRACE_MS = 400; // короче этого пропадание LoS — «мигание», реакцию не перевзводит
-export const SMART_BOT_AIM_SPREAD_RAD = 0.16; // полный конус разброса прицела ~9° (±0.08 рад) — скилл-модель стрелка,
+export const SMART_BOT_AIM_SPREAD_RAD = 0.16; // полный конус неточности стрелка ~9° (±0.08 рад) — скилл-модель бота,
 // складывается с неточностью ствола; единица та же, что у WeaponDef.aimSpreadRad
 export const SMART_BOT_DODGE_RADIUS = 130; // дистанция реакции на летящую пулю игрока
 export const SMART_BOT_DODGE_DURATION = 250; // мс рывка вбок при уклонении

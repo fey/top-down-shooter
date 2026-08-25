@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  AUTOMAT_AIM_SPREAD_RAD,
   PLAYER_SPEED,
   SHOOTER_KITE_ADVANCE_DIST,
   SHOOTER_KITE_RETREAT_DIST,
   SHOOTER_RANGE,
+  SMART_BOT_AIM_SPREAD_RAD,
   SMART_BOT_HP,
   SMART_BOT_KITE_ADVANCE_DIST,
   SMART_BOT_KITE_RETREAT_DIST,
@@ -39,6 +41,18 @@ describe("баланс SmartBot", () => {
   it("порог ухода в укрытие ниже полного HP (иначе прячется сразу)", () => {
     expect(SMART_BOT_LOW_HP).toBeGreaterThan(0);
     expect(SMART_BOT_LOW_HP).toBeLessThan(SMART_BOT_HP);
+  });
+
+  it("неточность стрелка задана полным конусом — той же единицей, что у оружия", () => {
+    // Это охрана единицы, а не заморозка баланса. Константа однажды уже была полуконусом
+    // (0.08) при том, что WeaponDef.aimSpreadRad — полный: код делил её на 2, документация
+    // обещала 4.5°, игрок получал 9.2°. Утверждение о величине — единственное, что ловит
+    // возврат к полуконусу: «прогоняется через ту же функцию» верно при любом числе.
+    // Игрок чувствует половину конуса, отсюда 0.08 в правой части.
+    expect(SMART_BOT_AIM_SPREAD_RAD / 2).toBeCloseTo(0.08);
+    // Сравнивать с неточностью автомата осмысленно только в одной единице: бот целится
+    // аккуратнее, чем шквал автомата, и это отношение переживёт подкрутку обоих чисел.
+    expect(SMART_BOT_AIM_SPREAD_RAD).toBeLessThan(AUTOMAT_AIM_SPREAD_RAD);
   });
 });
 

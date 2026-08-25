@@ -51,7 +51,6 @@ export class SmartBot extends Enemy {
   private readonly playerBullets: Phaser.Physics.Arcade.Group;
   private readonly weapon: Weapon;
 
-  private prevLos = false;
   private losAcquiredAt = 0;
   // Когда LoS пропала. NEGATIVE_INFINITY → самое первое обнаружение взводит реакцию.
   private losLostAt = Number.NEGATIVE_INFINITY;
@@ -88,19 +87,19 @@ export class SmartBot extends Enemy {
 
   tick(player: Player): void {
     const now = this.scene.time.now;
-    this.losCache = this.hasLoS(player);
+    // Снимок видимости — общий с остальными врагами: refreshLoS сдвигает prevLosCache
+    // и запоминает позицию игрока, а бот достраивает поверх свою модель «мигания» LoS.
+    this.refreshLoS(player);
     if (this.losCache) {
-      this.rememberLastKnown(player.x, player.y);
       // Взводим реакцию только на настоящую завязку боя: если игрок был невидим
       // дольше grace. Короткое мигание LoS (заход за угол на доли секунды) реакцию
       // не перевзводит → темп стрельбы в бою остаётся чисто оружейным.
-      if (!this.prevLos && now - this.losLostAt > SMART_BOT_LOS_GRACE_MS) {
+      if (!this.prevLosCache && now - this.losLostAt > SMART_BOT_LOS_GRACE_MS) {
         this.losAcquiredAt = now;
       }
-    } else if (this.prevLos) {
+    } else if (this.prevLosCache) {
       this.losLostAt = now; // falling edge
     }
-    this.prevLos = this.losCache;
 
     const dist = Phaser.Math.Distance.Between(this.x, this.y, player.x, player.y);
 
@@ -204,7 +203,7 @@ export class SmartBot extends Enemy {
     const aimAngle = this.aimAngleAt(player, dist);
     this.setRotation(aimAngle);
     if (now - this.losAcquiredAt >= SMART_BOT_REACTION_MS) {
-      // Разброс стрелка считает тот же jitterAngle, что и неточность ствола: одна
+      // Неточность стрелка считает тот же jitterAngle, что и неточность ствола: одна
       // единица (полный конус), один кламп. Случайность — здесь, в оболочке.
       const aimWithSpread = jitterAngle(aimAngle, SMART_BOT_AIM_SPREAD_RAD, Math.random() * 2 - 1);
       const shot = this.weapon.tryFire(this.x, this.y, aimWithSpread, now);

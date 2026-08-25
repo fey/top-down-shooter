@@ -34,11 +34,12 @@ unit-тестами vitest. Классы-сущности — тонкая об�
 | `src/ai/grid.ts` | поиск пути (Theta*), сеточный LoS, ближайшая и случайная проходимая точка |
 | `src/ai/geometry.ts` | геометрия LoS: пересечение отрезка со стенами |
 | `src/ai/separation.ts` | отталкивание от стен (`wallSeparationForce`) |
-| `src/ai/behaviors/navigation.ts` | восстановление при застревании: пропустить вейпоинт → пересчитать путь |
+| `src/ai/behaviors/navigation.ts` | восстановление при застревании (пропустить вейпоинт → пересчитать путь); выбор цели в CHASE (`chaseDecision`) |
 | `src/ai/behaviors/combat.ts` | кайтинг, упреждение прицела, решение об уклонении |
 | `src/ai/behaviors/alert.ts` | агро от чужой стрельбы: откуда прилетела просвистевшая пуля |
 | `src/weapons/Weapon.ts` | выстрел целиком: темп, неточность, веер, урон и скорость каждой пули |
 | `src/weapons/pellets.ts` | веер дробинок (внутренняя деталь `Weapon`) |
+| `src/weapons/accuracy.ts` | увод прицела внутри конуса неточности (`jitterAngle`) |
 | `src/level/spawns.ts` | парсинг слоя `spawns` |
 | `src/ui/hud.ts` | форматирование строк HUD |
 | `src/config.ts` | инварианты баланса (`config.test.ts`) |
@@ -60,6 +61,7 @@ top-down-shooter/
   src/
     main.ts           # точка входа, конфиг Phaser
     config.ts         # все числовые параметры (HP, урон, скорости, AI) + реестр WEAPONS
+    events.ts         # имена и типы нагрузки событий боя: эмитенты и подписчики берут отсюда
     scenes/
       BootScene.ts         # точка входа, запускает PreloadScene
       PreloadScene.ts      # генерирует текстуры процедурно (Phaser Graphics)
@@ -82,6 +84,7 @@ top-down-shooter/
     weapons/                # Phaser-free целиком: импорт phaser запрещён линтером
       Weapon.ts            # оружие по дескриптору WeaponDef: выстрел → спецификации пуль
       pellets.ts           # внутренняя деталь Weapon: раскладка веера дробинок по углам
+      accuracy.ts          # jitterAngle: увод прицела внутри конуса неточности (ствол и стрелок)
     ai/
       Pathfinder.ts        # Theta* (any-angle) pathfinding по сетке с обходом стен
     level/
@@ -242,7 +245,7 @@ Sprite + Arcade Physics body. Управление: WASD (нормализова
   (LoS + `SMART_BOT_AGGRO_RANGE`) → `CHASE`.
 - **Упреждающий прицел**: целится в экстраполированную позицию игрока (`pos + velocity·dist/bulletSpeed`).
   Модель «честности»: задержка реакции `SMART_BOT_REACTION_MS` перед открытием огня + случайный
-  разброс `SMART_BOT_AIM_SPREAD_RAD` на каждый выстрел (поворот корпуса — без разброса). Задержка
+  неточность `SMART_BOT_AIM_SPREAD_RAD` на каждый выстрел (поворот корпуса — без неточности). Задержка
   реакции взводится один раз на завязку боя: короткое мигание LoS (короче `SMART_BOT_LOS_GRACE_MS`)
   её не перевзводит, поэтому в устоявшемся бою темп стрельбы = кулдаун оружия (как у игрока).
 - **Уклонение**: сканирует `playerBullets`; при летящей в него пуле (близко + малое боковое
@@ -344,7 +347,7 @@ Sprite + Arcade Physics body. Управление: WASD (нормализова
 | `SMART_BOT_KITE_ADVANCE_DIST` | 320 px | дальше — сближаться |
 | `SMART_BOT_REACTION_MS` | 180 мс | задержка реакции (честность) |
 | `SMART_BOT_LOS_GRACE_MS` | 400 мс | короче — пропадание LoS считается «миганием» |
-| `SMART_BOT_AIM_SPREAD_RAD` | 0.16 рад | полный конус разброса прицела ~9° (±0.08 рад) |
+| `SMART_BOT_AIM_SPREAD_RAD` | 0.16 рад | полный конус неточности стрелка ~9° (±0.08 рад) |
 | `SMART_BOT_DODGE_RADIUS` | 130 px | дистанция реакции на пулю |
 | `SMART_BOT_DODGE_DURATION` | 250 мс | длительность рывка вбок |
 | `SMART_BOT_LOW_HP` | 2 | порог ухода в укрытие |
